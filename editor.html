@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>写作台 · 宫廷玉液酒</title>
+<meta name="description" content="宫廷玉液酒写作台：Markdown 写作，支持 LaTeX 公式与 Mermaid UML 类图。">
+<link rel="icon" href="assets/avatar.jpg">
+<script>(function(){try{var t=localStorage.getItem('cjl-theme');if(t==='dark'||t==='github'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="editor">
+<header class="site-header">
+  <div class="progress"></div>
+  <div class="container header-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="38" height="38">
+      <span class="brand-text">
+        <span class="brand-name">宫廷玉液酒</span>
+        <span class="brand-sub">CourtJadeLiquor</span>
+      </span>
+    </a>
+    <button class="nav-toggle" type="button" aria-label="展开导航">☰</button>
+    <nav class="nav"><a href="index.html">首页</a><a href="columns.html">专栏</a><a href="topics.html">专题</a><a href="posts.html" class="active">博客</a><a href="about.html">关于</a></nav>
+  </div>
+</header>
+<main>
+  <div class="page-head">
+    <div class="container">
+      <span class="eyebrow">Writing Desk</span>
+      <h1 id="pageTitle">写作台</h1>
+      <p>使用 Markdown 写作，支持 LaTeX 公式、Mermaid 流程图与 UML 类图。左侧编辑，右侧实时预览。</p>
+    </div>
+  </div>
+  <section class="section" style="padding-top:6px">
+    <div class="container">
+      <div id="editorGate" class="empty-state" hidden></div>
+
+      <div id="editorArea" class="editor-shell" hidden>
+        <div class="editor-fields">
+          <div class="field">
+            <label for="fTitle">标题</label>
+            <input id="fTitle" maxlength="120" placeholder="文章标题">
+          </div>
+          <div class="field">
+            <label for="fSlug">网址标识（slug）</label>
+            <input id="fSlug" maxlength="90" placeholder="例如 my-first-post">
+          </div>
+        </div>
+        <div class="editor-fields">
+          <div class="field">
+            <label for="fSummary">摘要</label>
+            <input id="fSummary" maxlength="300" placeholder="一句话介绍这篇文章">
+          </div>
+          <div class="field">
+            <label for="fTags">标签（逗号分隔）</label>
+            <input id="fTags" maxlength="160" placeholder="C++, 量化, 算子">
+          </div>
+        </div>
+
+        <div>
+          <div class="editor-toolbar" id="toolbar">
+            <button type="button" data-act="bold">加粗</button>
+            <button type="button" data-act="italic">斜体</button>
+            <button type="button" data-act="h2">标题</button>
+            <button type="button" data-act="quote">引用</button>
+            <button type="button" data-act="list">列表</button>
+            <button type="button" data-act="link">链接</button>
+            <button type="button" data-act="code">行内代码</button>
+            <button type="button" data-act="codeblock">代码块</button>
+            <button type="button" data-act="math">行内公式</button>
+            <button type="button" data-act="mathblock">公式块</button>
+            <button type="button" data-act="flow">流程图</button>
+            <button type="button" data-act="uml">UML 类图</button>
+            <button type="button" data-act="table">表格</button>
+          </div>
+          <div class="editor-grid">
+            <textarea id="fContent" class="editor-textarea" spellcheck="false" placeholder="在这里输入 Markdown…"></textarea>
+            <div class="editor-preview">
+              <div class="prose" id="previewBody"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="editor-actions">
+          <div class="editor-status" id="status"></div>
+          <div class="hero-actions">
+            <button type="button" id="btnDelete" class="btn btn-ghost" hidden>删除文章</button>
+            <a id="btnView" class="btn btn-ghost" href="posts.html" hidden>查看文章</a>
+            <a href="posts.html" class="btn btn-ghost">取消</a>
+            <button type="button" id="btnSave" class="btn btn-primary">发布文章</button>
+          </div>
+        </div>
+        <p class="editor-note">提示：UML 类图使用 <code>```mermaid classDiagram</code> 代码块；公式使用 <code>$...$</code> 或 <code>$$...$$</code>。</p>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="30" height="30">
+      <span>宫廷玉液酒 · CourtJadeLiquor</span>
+    </div>
+    <div class="footer-links">
+      <a href="columns.html">专栏</a>
+      <a href="topics.html">专题</a>
+      <a href="posts.html">博客</a>
+      <a href="about.html">关于</a>
+    </div>
+    <div class="footer-meta">系统 · 智能 · 策略 · 算子</div>
+  </div>
+</footer>
+<script src="assets/vendor/markdown-it/markdown-it.min.js"></script>
+<script src="assets/vendor/katex/katex.min.js"></script>
+<script src="assets/vendor/mermaid/mermaid.min.js"></script>
+<script src="assets/render.js"></script>
+<script src="assets/main.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var params = new URLSearchParams(window.location.search);
+  var initialSlug = params.get('slug') || '';
+  var editing = !!initialSlug;
+  var loaded = false;
+  var slugTouched = false;
+  var saving = false;
+
+  var gate = document.getElementById('editorGate');
+  var area = document.getElementById('editorArea');
+  var fTitle = document.getElementById('fTitle');
+  var fSlug = document.getElementById('fSlug');
+  var fSummary = document.getElementById('fSummary');
+  var fTags = document.getElementById('fTags');
+  var fContent = document.getElementById('fContent');
+  var previewBody = document.getElementById('previewBody');
+  var statusEl = document.getElementById('status');
+  var btnSave = document.getElementById('btnSave');
+  var btnDelete = document.getElementById('btnDelete');
+  var btnView = document.getElementById('btnView');
+  var pageTitle = document.getElementById('pageTitle');
+
+  function setStatus(message, kind) {
+    statusEl.textContent = message || '';
+    statusEl.className = 'editor-status' + (kind ? ' ' + kind : '');
+  }
+
+  function showGate(message, withLogin) {
+    gate.hidden = false;
+    area.hidden = true;
+    gate.textContent = '';
+    var text = document.createElement('p');
+    text.textContent = message;
+    gate.appendChild(text);
+    if (withLogin) {
+      var login = document.createElement('button');
+      login.className = 'btn btn-primary';
+      login.type = 'button';
+      login.style.marginTop = '14px';
+      login.textContent = '登录超级管理员账号';
+      login.addEventListener('click', function () { CJLApp.openAuth('login'); });
+      gate.appendChild(login);
+    }
+  }
+
+  function showEditor() {
+    gate.hidden = true;
+    area.hidden = false;
+    if (!loaded) {
+      loaded = true;
+      if (editing) loadPost();
+      else initNew();
+    }
+  }
+
+  function initNew() {
+    pageTitle.textContent = '新建文章';
+    btnSave.textContent = '发布文章';
+    btnDelete.hidden = true;
+    btnView.hidden = true;
+    var draft = null;
+    try { draft = localStorage.getItem('cjl-draft'); } catch (err) { draft = null; }
+    if (draft) {
+      fContent.value = draft;
+      setStatus('已恢复上次未发布的草稿');
+    }
+    renderPreview();
+  }
+
+  function loadPost() {
+    pageTitle.textContent = '编辑文章';
+    btnSave.textContent = '保存修改';
+    setStatus('文章加载中…');
+    CJLApp.api('/api/posts/' + encodeURIComponent(initialSlug)).then(function (data) {
+      var post = data.post;
+      fTitle.value = post.title;
+      fSlug.value = post.slug;
+      fSlug.disabled = true;
+      slugTouched = true;
+      fSummary.value = post.summary || '';
+      fTags.value = (post.tags || []).join(', ');
+      fContent.value = post.content || '';
+      btnDelete.hidden = false;
+      btnView.hidden = false;
+      btnView.href = 'post.html?slug=' + encodeURIComponent(post.slug);
+      setStatus('');
+      renderPreview();
+    }).catch(function (err) {
+      setStatus('加载失败：' + err.message, 'err');
+    });
+  }
+
+  function previewNow() {
+    if (!window.CJLRender) return;
+    CJLRender.mount(previewBody, fContent.value || '');
+  }
+
+  var previewTimer = null;
+  function renderPreview() {
+    if (previewTimer) clearTimeout(previewTimer);
+    previewTimer = setTimeout(previewNow, 280);
+  }
+
+  function insertAtCursor(text, selectStart, selectEnd) {
+    var start = fContent.selectionStart || 0;
+    var end = fContent.selectionEnd || 0;
+    var value = fContent.value;
+    fContent.value = value.slice(0, start) + text + value.slice(end);
+    var caret = typeof selectStart === 'number' ? start + selectStart : start + text.length;
+    var caretEnd = typeof selectEnd === 'number' ? start + selectEnd : caret;
+    fContent.focus();
+    fContent.setSelectionRange(caret, caretEnd);
+    renderPreview();
+  }
+
+  function wrap(prefix, suffix, placeholder) {
+    var start = fContent.selectionStart || 0;
+    var end = fContent.selectionEnd || 0;
+    var selected = fContent.value.slice(start, end) || placeholder;
+    insertAtCursor(prefix + selected + suffix, prefix.length, prefix.length + selected.length);
+  }
+
+  function linePrefix(prefix) {
+    var start = fContent.selectionStart || 0;
+    var value = fContent.value;
+    var lineStart = value.lastIndexOf('\n', start - 1) + 1;
+    fContent.value = value.slice(0, lineStart) + prefix + value.slice(lineStart);
+    fContent.focus();
+    fContent.setSelectionRange(start + prefix.length, start + prefix.length);
+    renderPreview();
+  }
+
+  var actions = {
+    bold: function () { wrap('**', '**', '粗体'); },
+    italic: function () { wrap('*', '*', '斜体'); },
+    h2: function () { linePrefix('## '); },
+    quote: function () { linePrefix('> '); },
+    list: function () { linePrefix('- '); },
+    link: function () { wrap('[', '](https://)', '链接文字'); },
+    code: function () { wrap('`', '`', 'code'); },
+    codeblock: function () { insertAtCursor('\n```js\n// code\n```\n'); },
+    math: function () { wrap('$', '$', 'E=mc^2'); },
+    mathblock: function () { insertAtCursor('\n$$\n\\frac{a}{b}\n$$\n'); },
+    flow: function () {
+      insertAtCursor('\n```mermaid\nflowchart LR\n  A[开始] --> B{判断}\n  B -- 是 --> C[结束]\n  B -- 否 --> A\n```\n');
+    },
+    uml: function () {
+      insertAtCursor('\n```mermaid\nclassDiagram\n  class Tensor {\n    +shape: vector<int>\n    +strides: vector<int>\n    +data()\n  }\n  class Buffer {\n    +ptr: void*\n    +size: size_t\n  }\n  Tensor --> Buffer\n```\n');
+    },
+    table: function () {
+      insertAtCursor('\n| 列一 | 列二 |\n| --- | --- |\n| 内容 | 内容 |\n');
+    }
+  };
+
+  document.getElementById('toolbar').addEventListener('click', function (ev) {
+    var btn = ev.target.closest('button[data-act]');
+    if (!btn) return;
+    var fn = actions[btn.getAttribute('data-act')];
+    if (fn) fn();
+  });
+
+  function slugify(title) {
+    var slug = String(title || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 80);
+    return slug || 'post-' + Date.now().toString(36);
+  }
+
+  fTitle.addEventListener('input', function () {
+    if (!editing && !slugTouched) fSlug.value = slugify(fTitle.value);
+  });
+  fSlug.addEventListener('input', function () { slugTouched = true; });
+  fContent.addEventListener('input', function () {
+    renderPreview();
+    if (!editing) {
+      try { localStorage.setItem('cjl-draft', fContent.value); } catch (err) { /* ignore */ }
+    }
+  });
+
+  btnSave.addEventListener('click', function () {
+    if (saving) return;
+    var title = fTitle.value.trim();
+    var slug = fSlug.value.trim();
+    var content = fContent.value;
+    if (!title) { setStatus('请填写标题', 'err'); fTitle.focus(); return; }
+    if (!slug) { setStatus('请填写网址标识', 'err'); fSlug.focus(); return; }
+    if (!content.trim()) { setStatus('正文不能为空', 'err'); fContent.focus(); return; }
+
+    saving = true;
+    btnSave.disabled = true;
+    setStatus('正在保存…');
+    var payload = {
+      title: title,
+      slug: slug,
+      summary: fSummary.value.trim(),
+      tags: fTags.value.trim(),
+      content: content
+    };
+    var request = editing
+      ? CJLApp.api('/api/posts/' + encodeURIComponent(initialSlug), { method: 'PUT', body: payload })
+      : CJLApp.api('/api/posts', { method: 'POST', body: payload });
+
+    request.then(function (data) {
+      try { localStorage.removeItem('cjl-draft'); } catch (err) { /* ignore */ }
+      setStatus('已保存，正在跳转…', 'ok');
+      CJLApp.toast(editing ? '文章已更新' : '文章已发布');
+      var target = data.post ? data.post.slug : slug;
+      setTimeout(function () { window.location.href = 'post.html?slug=' + encodeURIComponent(target); }, 600);
+    }).catch(function (err) {
+      setStatus('保存失败：' + err.message, 'err');
+      btnSave.disabled = false;
+      saving = false;
+    });
+  });
+
+  btnDelete.addEventListener('click', function () {
+    if (!editing) return;
+    if (!window.confirm('确定删除这篇文章吗？此操作不可恢复。')) return;
+    CJLApp.api('/api/posts/' + encodeURIComponent(initialSlug), { method: 'DELETE' }).then(function () {
+      CJLApp.toast('文章已删除');
+      setTimeout(function () { window.location.href = 'posts.html'; }, 500);
+    }).catch(function (err) {
+      setStatus('删除失败：' + err.message, 'err');
+    });
+  });
+
+  CJLApp.onAuth(function (user) {
+    if (user && user.role === 'admin') {
+      showEditor();
+    } else if (user) {
+      showGate('当前账号「' + user.nickname + '」不是超级管理员，只有「澄空」可以发布文章。', false);
+    } else {
+      showGate('写作台仅对超级管理员开放，请先登录「澄空」账号。', true);
+    }
+  });
+})();
+</script>
+</body>
+</html>

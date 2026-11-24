@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tensor 视图：为什么零拷贝，stride/offset 怎么算 · 宫廷玉液酒</title>
+<meta name="description" content="为什么视图零拷贝，stride 与 offset 的单位陷阱。">
+<link rel="icon" href="../assets/avatar.jpg">
+<script>(function(){try{var t=localStorage.getItem('cjl-theme');if(t==='dark'||t==='github'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<link rel="stylesheet" href="../assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="../assets/style.css">
+</head>
+<body data-thread="articles/qa-tensor-views.html">
+<header class="site-header">
+  <div class="progress"></div>
+  <div class="container header-inner">
+    <a class="brand" href="../index.html">
+      <img src="../assets/avatar.jpg" alt="宫廷玉液酒头像" width="38" height="38">
+      <span class="brand-text">
+        <span class="brand-name">宫廷玉液酒</span>
+        <span class="brand-sub">CourtJadeLiquor</span>
+      </span>
+    </a>
+    <button class="nav-toggle" type="button" aria-label="展开导航">☰</button>
+    <nav class="nav"><a href="../index.html">首页</a><a href="../columns.html" class="active">专栏</a><a href="../topics.html">专题</a><a href="../posts.html">博客</a><a href="../about.html">关于</a></nav>
+  </div>
+</header>
+<main>
+<article>
+  <div class="article-head">
+    <div class="container">
+      <div class="crumbs">
+        <a href="../index.html">首页</a><span class="sep">/</span>
+        <a href="../columns.html">专栏</a><span class="sep">/</span>
+        <a href="../column-mycv.html">HPCPlatform</a><span class="sep">/</span>
+        <span>问答与易错点</span>
+      </div>
+      <h1>Tensor 视图：为什么零拷贝，stride/offset 怎么算</h1>
+      <div class="article-meta">
+        <span>HPCPlatform 算子开发实战</span>
+        <span class="dot">·</span>
+        <span>问答与易错点</span>
+        <span class="dot">·</span>
+        <span>约 7 分钟</span>
+        <span class="dot">·</span>
+        <span>docs/qa/tensor_views.md</span>
+      </div>
+    </div>
+  </div>
+  <div class="container article-layout">
+    <div class="prose">
+      <h1 id="h-1">Tensor 视图：为什么零拷贝，stride/offset 怎么算</h1>
+<blockquote><p>相关代码：<code>include/hpcplatform/core/tensor.h</code>、<code>src/core/tensor.cpp</code>、<code>src/core/tensor_iterator.h</code></p></blockquote>
+<hr>
+<h2 id="h-2">1. 先记住一个心智模型</h2>
+<p><code>Tensor</code> 不是数据，它是一张<strong>"数据在哪里、怎么解读"的便签</strong>：</p>
+<pre><code>Tensor {
+  buffer_  : shared_ptr&lt;Buffer&gt;   // 真正的内存（可能被很多 Tensor 共享）
+  shape_   : Shape                 // 每个维度多长
+  strides_ : int64_t[8]            // 每个维度走一步要跨多少个【元素】
+  offset_  : size_t                // 从 buffer 起点数多少个【字节】开始（见 §2）
+  dtype_, device_, backend_
+}</code></pre>
+<p><code>View</code> / <code>Slice</code> / <code>Permute</code> 之所以零拷贝，是因为它们<strong>只改这张便签</strong>（shape/strides/offset），<code>buffer_</code> 还是同一个 <code>shared_ptr</code>。数据一个字节都没动。</p>
+<hr>
+<h2 id="h-3">2. 最容易搞错的一点：stride 的单位是【元素】，不是字节</h2>
+<p><code>Tensor::Stride(dim)</code> 返回的是<strong>元素数</strong>，不是字节数（<span class="code-link" title="仓库路径">tensor.h</span> 注释明确写了 "Stride in elements (not bytes)"）。</p>
+<p>这里有一组<strong>单位必须分清</strong>的约定（实测自 <code>src/core/tensor.cpp</code>）：</p>
+<ul><li><code>strides_</code> / <code>Stride(dim)</code>：单位是<strong>元素</strong>。<code>Slice</code> 里算偏移就是 <code>begin * Stride(dim)</code>（元素）。</li><li><code>offset_</code>：单位是<strong>字节</strong>。<code>Slice</code> 最终写的是 <code>offset_ += begin * Stride(dim) * ElementSize()</code>（<span class="code-link" title="仓库路径">tensor.cpp</span>）。</li><li><code>Tensor::data()</code>：返回 <code>buffer_-&gt;data() + offset_</code>，即<strong>已定位到视图起点的字节指针</strong>（<span class="code-link" title="仓库路径">tensor.h</span>）。</li><li><code>Tensor::Data&lt;T&gt;()</code>：<code>reinterpret_cast&lt;T*&gt;(data())</code>，即视图起点的<strong>元素指针</strong>。</li></ul>
+<p>所以写内核的正确姿势：用 <code>tensor.Data&lt;T&gt;()</code> 拿元素起点指针，用 <code>tensor.Stride(dim)</code>（元素）做索引，<code>ptr[i * stride]</code> 直接寻址。<strong>不要</strong>拿 <code>data()</code>（字节）再自己乘 <code>sizeof(T)</code>——<code>offset_</code> 已经是字节，混算会错位。</p>
+<blockquote><p>经验法则：在内核里永远用 <code>tensor.Data&lt;T&gt;()</code> + <code>tensor.Stride(dim)</code>（元素）做寻址；不要混用 <code>data()</code>（字节）和 stride（元素），否则会错位。</p></blockquote>
+<hr>
+<h2 id="h-4">3. 三种视图各自做了什么</h2>
+<table><thead><tr><th>操作</th><th>改了什么</th><th>前提</th><th>拷贝？</th></tr></thead><tbody><tr><td><code>View(shape)</code></td><td>改 <code>shape_</code> + 重算连续 <code>strides_</code></td><td>输入<strong>必须连续</strong>（否则 <code>kInvalidArgument</code>）且 <code>Numel</code> 不变</td><td>否</td></tr><tr><td><code>Slice(dim, begin, end)</code></td><td>改 <code>offset_</code>（加上 <code>begin * stride</code>）+ 该维长度</td><td>不越界</td><td>否</td></tr><tr><td><code>Permute(order)</code></td><td>重排 <code>shape_</code> 与 <code>strides_</code>（按 order 交换）</td><td>order 是合法排列</td><td>否</td></tr><tr><td><code>Reshape(shape)</code></td><td>连续→等价 View；非连续→<strong>Clone</strong></td><td>Numel 不变</td><td>视情况</td></tr><tr><td><code>Clone()</code></td><td>分配新 Buffer，逐元素深拷贝</td><td>—</td><td>是</td></tr></tbody></table>
+<p>关键点：</p>
+<ul><li><strong><code>Reshape</code> 永远给你一个有效张量</strong>：能零拷贝就零拷贝，不能就显式深拷贝。它不会"半成功"，也不会失败。代价是非连续时多一次拷贝，但行为可预期。</li><li><strong>拷贝构造 <code>Tensor b = a</code> 不是深拷贝</strong>：只是 <code>buffer_</code> 引用计数 +1，<code>a</code> 和 <code>b</code> 共享内存。要独立副本必须 <code>a.Clone()</code>。这是新手最常踩的坑——改了 <code>b</code> 发现 <code>a</code> 也变了。</li></ul>
+<hr>
+<h2 id="h-5">4. 视图的代价：整块内存一起活</h2>
+<p><code>Slice</code> 出一个 4×4 的小块，底层可能是一个 1024×1024 的大 Buffer。因为视图共享 <code>shared_ptr&lt;Buffer&gt;</code>，<strong>只要小块还活着，整块大内存就不能释放</strong>。</p>
+<p>这不是 bug，是取舍（<a href="architecture.html">架构设计</a> §1"描述与存储分离"原则）：用"轻量视图"换"简单所有权"。如果你的场景会切出大量小视图且长期持有，导致原大张量无法回收——这是已知局限，应在调用方主动 <code>Clone</code> 出独立小张量。</p>
+<hr>
+<h2 id="h-6">5. 非连续张量还能用吗？能，但要区分两类操作</h2>
+<p>视图常常产生<strong>非连续</strong>张量（如 <code>Slice</code> 后 stride 不等于连续值）。它们并非二等公民：</p>
+<ul><li><strong><code>Context::Copy</code></strong>：拷贝的是<strong>逻辑元素</strong>，按 stride 逐元素搬运，非连续输入正确（见 <a href="qa-context-copy.html"><code>context_copy.md</code></a>）。</li><li><strong>逐元素遍历</strong>：内部工具 <code>TensorIterator</code>（<code>src/core/tensor_iterator.h</code>）按 stride 遍历任意布局，目前 <code>Context::Copy</code> 的非连续路径用它逐元素搬运；未来元素级内核可复用同一工具。</li><li><strong>要求连续的算子</strong>：在校验层显式声明并拒绝（如某些后端的图像算子），不会静默给出错误结果。</li></ul>
+<p>判断连续性用 <code>Tensor::IsContiguous()</code>。</p>
+<hr>
+<h2 id="h-7">6. 一句话总结</h2>
+<blockquote><p>视图 = 改便签不改数据；<code>Clone</code> 才换数据。stride 是元素、<code>Data&lt;T&gt;()</code> 是元素指针，别和字节的 <code>data()</code> 混算。<code>Reshape</code> 非连续会深拷贝，拷贝构造不会。</p></blockquote>
+      <div class="article-nav"><a href="qa-cpubackends.html"><span class="lbl">上一篇</span>CPU 内存与后端分层</a><a class="next" href="qa-memory-lifecycle.html"><span class="lbl">下一篇</span>内存生命周期</a></div>
+    </div>
+    <aside class="toc">
+      <div class="toc-title">本篇目录</div>
+      <a class="lv2" href="#h-2">1. 先记住一个心智模型</a><a class="lv2" href="#h-3">2. 最容易搞错的一点：stride 的单位是【元素】，不是字节</a><a class="lv2" href="#h-4">3. 三种视图各自做了什么</a><a class="lv2" href="#h-5">4. 视图的代价：整块内存一起活</a><a class="lv2" href="#h-6">5. 非连续张量还能用吗？能，但要区分两类操作</a><a class="lv2" href="#h-7">6. 一句话总结</a>
+    </aside>
+  </div>
+</article>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="../assets/avatar.jpg" alt="宫廷玉液酒头像" width="30" height="30">
+      <span>宫廷玉液酒 · CourtJadeLiquor</span>
+    </div>
+    <div class="footer-links">
+      <a href="../columns.html">专栏</a>
+      <a href="../topics.html">专题</a>
+      <a href="../posts.html">博客</a><a href="../about.html">关于</a>
+    </div>
+    <div class="footer-meta">系统 · 智能 · 策略 · 算子</div>
+  </div>
+</footer>
+<script src="../assets/main.js"></script>
+<script src="../assets/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>算子开发 · 宫廷玉液酒</title>
+<meta name="description" content="以图像与变换算子为样本，讨论 Tensor 抽象、多后端分发与逐层优化，全部资料来自真实项目文档。">
+<link rel="icon" href="assets/avatar.jpg">
+<script>(function(){try{var t=localStorage.getItem('cjl-theme');if(t==='dark'||t==='github'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="progress"></div>
+  <div class="container header-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="38" height="38">
+      <span class="brand-text">
+        <span class="brand-name">宫廷玉液酒</span>
+        <span class="brand-sub">CourtJadeLiquor</span>
+      </span>
+    </a>
+    <button class="nav-toggle" type="button" aria-label="展开导航">☰</button>
+    <nav class="nav"><a href="index.html">首页</a><a href="columns.html">专栏</a><a href="topics.html" class="active">专题</a><a href="posts.html">博客</a><a href="about.html">关于</a></nav>
+  </div>
+</header>
+<main>
+<div class="page-head">
+  <div class="container">
+    <div class="crumbs"><a href="index.html">首页</a><span class="sep">/</span><a href="topics.html">技术专题</a><span class="sep">/</span><span>算子开发</span></div>
+    <h1>算子开发</h1>
+    <p class="latin" style="font-family:var(--serif);font-style:italic;color:var(--muted);letter-spacing:.12em;margin:-4px 0 12px">高性能算子与 HPCPlatform</p>
+    <p>以图像与变换算子为样本，讨论 Tensor 抽象、多后端分发与逐层优化，全部资料来自真实项目文档。</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:20px"><span class="tag">CUDA</span><span class="tag">SIMD</span><span class="tag">多后端</span></div>
+  </div>
+</div>
+<section class="section" style="padding-top:26px">
+  <div class="container">
+    <div class="article-layout" style="grid-template-columns:minmax(0,1fr) 260px;padding-top:0">
+      <div class="prose">
+        <h2>这个专题写什么</h2>
+        <p>算子是把算法意图变成硬件指令的最小单元，也是性能问题最集中的地方。这个专题以一个 C++17 高性能算子平台 HPCPlatform 为样本，从数据模型、注册分发到 CPU 多版本与 CUDA 内核完整展开。</p>
+        <h2>写作计划</h2>
+        <ul><li><strong>统一数据抽象</strong>：Tensor 描述符、Buffer 与零拷贝视图的单位与生命周期约定。</li><li><strong>算子自治与分发</strong>：三元组注册表、显式拒绝与三种错误码的边界。</li><li><strong>CPU 多版本优化</strong>：naive / OpenMP / oneTBB / SIMD / AVX2 的组织与位精确对拍。</li><li><strong>CUDA 内核</strong>：流语义、外部内存可见性、主机与设备间的拷贝路径。</li><li><strong>配置驱动</strong>：用 YAML 把算子实例化为对象，切换后端而不改业务代码。</li><li><strong>测试与基准</strong>：GoogleTest/CTest、跨后端容差与独立性能评估。</li></ul>
+        <h2>相关阅读</h2>
+        <p><a href="column-mycv.html">进入专栏：HPCPlatform 算子开发实战</a>。完整文档按阅读顺序整理在专栏中，适合系统性通读。</p>
+        <div class="article-nav" style="grid-template-columns:1fr">
+          <a href="topics.html"><span class="lbl">返回</span>全部技术专题</a>
+        </div>
+      </div>
+      <aside class="toc">
+        <div class="toc-title">专题信息</div>
+        <a href="#">算子开发 · 高性能算子与 HPCPlatform</a>
+        <div class="toc-title" style="margin-top:22px">其它专题</div>
+        <a class="lv3" href="topic-cpp-rust.html">C++ / Rust</a><a class="lv3" href="topic-python-ai.html">Python AI</a><a class="lv3" href="topic-quant-strategy.html">量化交易策略</a><a class="lv3" href="topic-quant-system.html">量化系统开发</a>
+      </aside>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="30" height="30">
+      <span>宫廷玉液酒 · CourtJadeLiquor</span>
+    </div>
+    <div class="footer-links">
+      <a href="columns.html">专栏</a>
+      <a href="topics.html">专题</a>
+      <a href="posts.html">博客</a><a href="about.html">关于</a>
+    </div>
+    <div class="footer-meta">系统 · 智能 · 策略 · 算子</div>
+  </div>
+</footer>
+<script src="assets/main.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

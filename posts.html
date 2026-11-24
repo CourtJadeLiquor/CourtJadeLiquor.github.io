@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>博客文章 · 宫廷玉液酒</title>
+<meta name="description" content="宫廷玉液酒的个人博客文章，支持 Markdown、LaTeX 公式与 Mermaid UML 类图。">
+<link rel="icon" href="assets/avatar.jpg">
+<script>(function(){try{var t=localStorage.getItem('cjl-theme');if(t==='dark'||t==='github'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/vendor/katex/katex.min.css">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body data-page="posts">
+<header class="site-header">
+  <div class="progress"></div>
+  <div class="container header-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="38" height="38">
+      <span class="brand-text">
+        <span class="brand-name">宫廷玉液酒</span>
+        <span class="brand-sub">CourtJadeLiquor</span>
+      </span>
+    </a>
+    <button class="nav-toggle" type="button" aria-label="展开导航">☰</button>
+    <nav class="nav"><a href="index.html">首页</a><a href="columns.html">专栏</a><a href="topics.html">专题</a><a href="posts.html" class="active">博客</a><a href="about.html">关于</a></nav>
+  </div>
+</header>
+<main>
+  <div class="page-head">
+    <div class="container">
+      <span class="eyebrow">Blog</span>
+      <h1>博客文章</h1>
+      <p>由站内写作台发布的文章，全部支持 Markdown、LaTeX 数学公式与 Mermaid 流程图 / UML 类图。无需注册，填写昵称即可在文章下评论与回复。</p>
+      <div id="adminActions" class="hero-actions" style="margin-top:22px"></div>
+    </div>
+  </div>
+  <section class="section" style="padding-top:6px">
+    <div class="container">
+      <div class="posts-grid" id="postsList">
+        <div class="empty-state">文章加载中…</div>
+      </div>
+    </div>
+  </section>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="30" height="30">
+      <span>宫廷玉液酒 · CourtJadeLiquor</span>
+    </div>
+    <div class="footer-links">
+      <a href="columns.html">专栏</a>
+      <a href="topics.html">专题</a>
+      <a href="posts.html">博客</a>
+      <a href="about.html">关于</a>
+    </div>
+    <div class="footer-meta">系统 · 智能 · 策略 · 算子</div>
+  </div>
+</footer>
+<script src="assets/main.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  'use strict';
+  var list = document.getElementById('postsList');
+  var actions = document.getElementById('adminActions');
+
+  function esc(value) {
+    return String(value == null ? '' : value);
+  }
+
+  function card(post) {
+    var item = document.createElement('article');
+    item.className = 'card post-card';
+
+    var title = document.createElement('h3');
+    var link = document.createElement('a');
+    link.href = 'post.html?slug=' + encodeURIComponent(post.slug);
+    link.textContent = post.title;
+    link.style.color = 'inherit';
+    title.appendChild(link);
+
+    var summary = document.createElement('p');
+    summary.className = 'post-summary';
+    summary.textContent = post.summary || '（暂无摘要）';
+
+    var tags = document.createElement('div');
+    tags.className = 'post-tags';
+    (post.tags || []).forEach(function (tag) {
+      var chip = document.createElement('span');
+      chip.className = 'post-tag';
+      chip.textContent = tag;
+      tags.appendChild(chip);
+    });
+
+    var meta = document.createElement('div');
+    meta.className = 'post-meta';
+    var author = document.createElement('span');
+    author.textContent = '作者 · ' + (post.author || '澄空');
+    var date = document.createElement('span');
+    date.textContent = new Date(post.updatedAt).toLocaleDateString('zh-CN');
+    meta.appendChild(author);
+    meta.appendChild(date);
+
+    var actionsRow = document.createElement('div');
+    actionsRow.className = 'post-actions';
+    var read = document.createElement('a');
+    read.href = 'post.html?slug=' + encodeURIComponent(post.slug);
+    read.textContent = '阅读全文 →';
+    actionsRow.appendChild(read);
+
+    if (window.CJLApp && CJLApp.user && CJLApp.user.role === 'admin') {
+      var edit = document.createElement('a');
+      edit.href = 'editor.html?slug=' + encodeURIComponent(post.slug);
+      edit.textContent = '编辑';
+      actionsRow.appendChild(edit);
+
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.textContent = '删除';
+      del.addEventListener('click', function () {
+        if (!window.confirm('确定删除《' + post.title + '》吗？')) return;
+        CJLApp.api('/api/posts/' + encodeURIComponent(post.slug), { method: 'DELETE' }).then(function () {
+          CJLApp.toast('文章已删除');
+          load();
+        }).catch(function (err) { CJLApp.toast(err.message); });
+      });
+      actionsRow.appendChild(del);
+    }
+
+    item.appendChild(title);
+    item.appendChild(summary);
+    if ((post.tags || []).length) item.appendChild(tags);
+    item.appendChild(meta);
+    item.appendChild(actionsRow);
+    return item;
+  }
+
+  function load() {
+    CJLApp.api('/api/posts').then(function (data) {
+      list.textContent = '';
+      if (!data.posts.length) {
+        var empty = document.createElement('div');
+        empty.className = 'empty-state';
+        empty.textContent = '还没有文章。';
+        list.appendChild(empty);
+        return;
+      }
+      data.posts.forEach(function (post) { list.appendChild(card(post)); });
+    }).catch(function (err) {
+      list.textContent = '';
+      var empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = '加载失败：' + err.message;
+      list.appendChild(empty);
+    });
+  }
+
+  function renderAdmin() {
+    actions.textContent = '';
+    if (!CJLApp.user || CJLApp.user.role !== 'admin') return;
+    var write = document.createElement('a');
+    write.className = 'btn btn-primary';
+    write.href = 'editor.html';
+    write.textContent = '写作台 · 新建文章';
+    actions.appendChild(write);
+    load();
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    load();
+    CJLApp.onAuth(renderAdmin);
+  });
+})();
+</script>
+</body>
+</html>

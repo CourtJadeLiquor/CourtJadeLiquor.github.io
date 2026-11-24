@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Python AI · 宫廷玉液酒</title>
+<meta name="description" content="数据处理、模型训练、推理部署与 Agent 工程化——关注能落地的工程细节，而非演示脚本。">
+<link rel="icon" href="assets/avatar.jpg">
+<script>(function(){try{var t=localStorage.getItem('cjl-theme');if(t==='dark'||t==='github'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="progress"></div>
+  <div class="container header-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="38" height="38">
+      <span class="brand-text">
+        <span class="brand-name">宫廷玉液酒</span>
+        <span class="brand-sub">CourtJadeLiquor</span>
+      </span>
+    </a>
+    <button class="nav-toggle" type="button" aria-label="展开导航">☰</button>
+    <nav class="nav"><a href="index.html">首页</a><a href="columns.html">专栏</a><a href="topics.html" class="active">专题</a><a href="posts.html">博客</a><a href="about.html">关于</a></nav>
+  </div>
+</header>
+<main>
+<div class="page-head">
+  <div class="container">
+    <div class="crumbs"><a href="index.html">首页</a><span class="sep">/</span><a href="topics.html">技术专题</a><span class="sep">/</span><span>Python AI</span></div>
+    <h1>Python AI</h1>
+    <p class="latin" style="font-family:var(--serif);font-style:italic;color:var(--muted);letter-spacing:.12em;margin:-4px 0 12px">Python 与人工智能工程</p>
+    <p>数据处理、模型训练、推理部署与 Agent 工程化——关注能落地的工程细节，而非演示脚本。</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:20px"><span class="tag">PyTorch</span><span class="tag">推理</span><span class="tag">Agent</span></div>
+  </div>
+</div>
+<section class="section" style="padding-top:26px">
+  <div class="container">
+    <div class="article-layout" style="grid-template-columns:minmax(0,1fr) 260px;padding-top:0">
+      <div class="prose">
+        <h2>这个专题写什么</h2>
+        <p>Python 是 AI 工程的事实标准语言，但“能跑通 demo”和“能上线服务”之间隔着数据处理、显存、吞吐与可观测性。这个专题记录工程化路径上的具体问题与可复用的实现。</p>
+        <h2>写作计划</h2>
+        <ul><li><strong>张量与内存语义</strong>：PyTorch 的 view / stride / 原地操作，和 C++ 侧 Tensor 抽象的对应关系。</li><li><strong>训练循环的工程细节</strong>：混合精度、梯度累积、检查点与实验可复现性。</li><li><strong>推理服务化</strong>：批处理、动态 shape、量化与显存占用之间的权衡。</li><li><strong>RAG 与 Agent 系统</strong>：检索质量、上下文预算与工具调用的失败处理。</li><li><strong>评测与回归</strong>：离线指标、在线反馈与回归集建设。</li><li><strong>Python 与原生扩展</strong>：pybind11 封装 C++/CUDA 算子，把瓶颈下沉到原生层。</li></ul>
+        <h2>相关阅读</h2>
+        <p><a href="qa-op-dispatch.html">延伸阅读：算子分发与错误码</a>。完整文档按阅读顺序整理在专栏中，适合系统性通读。</p>
+        <div class="article-nav" style="grid-template-columns:1fr">
+          <a href="topics.html"><span class="lbl">返回</span>全部技术专题</a>
+        </div>
+      </div>
+      <aside class="toc">
+        <div class="toc-title">专题信息</div>
+        <a href="#">Python AI · Python 与人工智能工程</a>
+        <div class="toc-title" style="margin-top:22px">其它专题</div>
+        <a class="lv3" href="topic-cpp-rust.html">C++ / Rust</a><a class="lv3" href="topic-quant-strategy.html">量化交易策略</a><a class="lv3" href="topic-quant-system.html">量化系统开发</a><a class="lv3" href="topic-operator-dev.html">算子开发</a>
+      </aside>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="30" height="30">
+      <span>宫廷玉液酒 · CourtJadeLiquor</span>
+    </div>
+    <div class="footer-links">
+      <a href="columns.html">专栏</a>
+      <a href="topics.html">专题</a>
+      <a href="posts.html">博客</a><a href="about.html">关于</a>
+    </div>
+    <div class="footer-meta">系统 · 智能 · 策略 · 算子</div>
+  </div>
+</footer>
+<script src="assets/main.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>

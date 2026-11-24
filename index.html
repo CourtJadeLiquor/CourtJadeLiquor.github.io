@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>宫廷玉液酒 · CourtJadeLiquor</title>
+<meta name="description" content="个人博客：C++/Rust、Python AI、量化交易策略与系统开发、算子开发。">
+<link rel="icon" href="assets/avatar.jpg">
+<script>(function(){try{var t=localStorage.getItem('cjl-theme');if(t==='dark'||t==='github'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="progress"></div>
+  <div class="container header-inner">
+    <a class="brand" href="index.html">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="38" height="38">
+      <span class="brand-text">
+        <span class="brand-name">宫廷玉液酒</span>
+        <span class="brand-sub">CourtJadeLiquor</span>
+      </span>
+    </a>
+    <button class="nav-toggle" type="button" aria-label="展开导航">☰</button>
+    <nav class="nav"><a href="index.html" class="active">首页</a><a href="columns.html">专栏</a><a href="topics.html">专题</a><a href="posts.html">博客</a><a href="about.html">关于</a></nav>
+  </div>
+</header>
+<main>
+<section class="hero">
+  <div class="container hero-grid">
+    <div>
+      <span class="eyebrow">Personal Blog · Est. 2026</span>
+      <h1>宫廷玉液酒</h1>
+      <p class="latin">CourtJadeLiquor</p>
+      <p class="lead">一个关于系统底层与智能算法的技术手札：C++/Rust 的性能与抽象、Python 与 AI 的工程落地、量化交易的策略与系统，以及高性能算子的实现细节。</p>
+      <div class="tags">
+        <span class="tag">C++</span><span class="tag">Rust</span><span class="tag">Python</span>
+        <span class="tag">AI</span><span class="tag">量化交易</span><span class="tag">算子开发</span>
+      </div>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="column-mycv.html">进入首期专栏 <span>→</span></a>
+        <a class="btn btn-ghost" href="topics.html">浏览技术专题</a>
+      </div>
+      <div class="stats">
+        <div class="stat"><b>5</b><span>技术专题</span></div>
+        <div class="stat"><b>1</b><span>深度专栏</span></div>
+        <div class="stat"><b>12</b><span>篇项目文档</span></div>
+      </div>
+    </div>
+    <div class="hero-portrait">
+      <div class="glow"></div>
+      <div class="portrait-ring"></div>
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像">
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h2>技术专题</h2>
+        <p>五条主线，从语言运行时到交易系统与算子内核</p>
+      </div>
+      <a class="section-link" href="topics.html">查看全部专题 →</a>
+    </div>
+    <div class="grid grid-3">
+      <a class="card reveal" href="topic-cpp-rust.html">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M8 6 4 12l4 6M16 6l4 6-4 6M13 4l-2 16"/></svg></div>
+      <h3>C++ / Rust</h3>
+      <p>从零开销抽象到所有权模型，记录两种系统语言在真实工程里的取舍：类型系统、错误模型、内存与性能。</p>
+      <div class="card-meta"><span>系统级语言与工程实践</span><span class="arrow">→</span></div>
+    </a><a class="card reveal" href="topic-python-ai.html">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3v3.4M12 17.6V21M3 12h3.4M17.6 12H21M5.6 5.6l2.4 2.4M16 16l2.4 2.4M18.4 5.6 16 8M8 16l-2.4 2.4"/></svg></div>
+      <h3>Python AI</h3>
+      <p>数据处理、模型训练、推理部署与 Agent 工程化——关注能落地的工程细节，而非演示脚本。</p>
+      <div class="card-meta"><span>Python 与人工智能工程</span><span class="arrow">→</span></div>
+    </a><a class="card reveal" href="topic-quant-strategy.html">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M4 19h16M6 15l4-5 3 3 5-7"/><circle cx="6" cy="15" r="1.2"/><circle cx="10" cy="10" r="1.2"/><circle cx="13" cy="13" r="1.2"/><circle cx="18" cy="6" r="1.2"/></svg></div>
+      <h3>量化交易策略</h3>
+      <p>因子、组合与交易成本：把研究结论放进一个可信的回测框架里检验，而不是相信漂亮的净值曲线。</p>
+      <div class="card-meta"><span>策略研究与回测</span><span class="arrow">→</span></div>
+    </a><a class="card reveal" href="topic-quant-system.html">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="1.6"/><rect x="3" y="14" width="18" height="6" rx="1.6"/><path d="M7 7.5h.01M7 17h.01M11 7.5h4M11 17h6"/></svg></div>
+      <h3>量化系统开发</h3>
+      <p>行情、撮合、风控与账务：一套能长期运行的系统该怎样被构建，又该在哪里为延迟让步。</p>
+      <div class="card-meta"><span>交易系统与低延迟</span><span class="arrow">→</span></div>
+    </a><a class="card reveal" href="topic-operator-dev.html">
+      <div class="card-icon"><svg viewBox="0 0 24 24"><path d="M12 3 21 7.5v9L12 21 3 16.5v-9L12 3Z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></div>
+      <h3>算子开发</h3>
+      <p>以图像与变换算子为样本，讨论 Tensor 抽象、多后端分发与逐层优化，全部资料来自真实项目文档。</p>
+      <div class="card-meta"><span>高性能算子与 HPCPlatform</span><span class="arrow">→</span></div>
+    </a>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-head">
+      <div>
+        <h2>首期专栏</h2>
+        <p>完整开源文档整理，从架构到每一个易错点</p>
+      </div>
+      <a class="section-link" href="columns.html">专栏索引 →</a>
+    </div>
+    <div class="feature">
+      <div class="feature-body">
+        <span class="chip">12 篇 · 已发布</span>
+        <h3>HPCPlatform：从零搭建高性能算子平台</h3>
+        <p>以 C++17 构建的算子学习与研究平台：统一的 Tensor / Context 抽象、可插拔后端、CPU 多版本优化、CUDA 加速与配置驱动调用。</p>
+        <p>本专栏收录项目全部技术文档——架构设计、配置驱动、八篇问答易错点与版本演进，按阅读顺序整理为一条完整路径。</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="column-mycv.html">开始阅读 <span>→</span></a>
+          <a class="btn btn-ghost" href="articles/architecture.html">先看架构设计</a>
+        </div>
+      </div>
+      <div class="feature-visual">
+        <a class="chapter-link" href="articles/architecture.html">
+      <span class="num">01</span>
+      <span>架构设计</span>
+      <span class="more">总览</span>
+    </a><a class="chapter-link" href="articles/operator-config.html">
+      <span class="num">02</span>
+      <span>配置驱动算子对象</span>
+      <span class="more">总览</span>
+    </a><a class="chapter-link" href="articles/qa-overview.html">
+      <span class="num">03</span>
+      <span>问答与易错点总览</span>
+      <span class="more">问答与易错点</span>
+    </a><a class="chapter-link" href="articles/qa-cpubackends.html">
+      <span class="num">04</span>
+      <span>CPU 内存与后端分层</span>
+      <span class="more">问答与易错点</span>
+    </a><a class="chapter-link" href="articles/qa-tensor-views.html">
+      <span class="num">05</span>
+      <span>Tensor 视图与 stride</span>
+      <span class="more">问答与易错点</span>
+    </a><a class="chapter-link" href="articles/qa-memory-lifecycle.html">
+      <span class="num">06</span>
+      <span>内存生命周期</span>
+      <span class="more">问答与易错点</span>
+    </a>
+        <a class="chapter-link" href="column-mycv.html" style="border-bottom:0;color:var(--jade);font-size:12.5px;letter-spacing:.08em">查看全部 12 篇 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="30" height="30">
+      <span>宫廷玉液酒 · CourtJadeLiquor</span>
+    </div>
+    <div class="footer-links">
+      <a href="columns.html">专栏</a>
+      <a href="topics.html">专题</a>
+      <a href="posts.html">博客</a><a href="about.html">关于</a>
+    </div>
+    <div class="footer-meta">系统 · 智能 · 策略 · 算子</div>
+  </div>
+</footer>
+<script src="assets/main.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
