@@ -1,0 +1,66 @@
+---
+layout: default
+---
+{% comment %}
+  博客文章布局：自动生成 TOC + 面包屑 + 上/下篇导航
+  front matter: title, date, author, tags, categories, description
+{% endcomment %}
+
+<article>
+  <div class="article-head">
+    <div class="container">
+      <div class="crumbs">
+        <a href="{{ '/' | relative_url }}">首页</a><span class="sep">/</span>
+        <a href="{{ '/blog/' | relative_url }}">博客</a><span class="sep">/</span>
+        <span>{{ page.title }}</span>
+      </div>
+      <h1>{{ page.title }}</h1>
+      <div class="article-meta">
+        {% if page.author %}<span>作者 · {{ page.author }}</span><span class="dot">·</span>{% endif %}
+        <span>{{ page.date | date: "%Y-%m-%d %H:%M" }}</span>
+        {% if page.categories and page.categories.size > 0 %}
+          <span class="dot">·</span><span>{{ page.categories | join: ' · ' }}</span>
+        {% endif %}
+        <span class="dot">·</span><span>Markdown · Rouge</span>
+      </div>
+      {% if page.tags and page.tags.size > 0 %}
+        <div class="post-tags">
+          {% for tag in page.tags %}
+            <span class="post-tag">#{{ tag }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="container article-layout">
+    <div class="prose" id="proseContent">
+      {{ content }}
+    </div>
+    <aside class="toc" id="postToc" hidden>
+      <div class="toc-title">目录</div>
+    </aside>
+  </div>
+</article>
+
+<script>
+// 自动生成 TOC（h2/h3）
+(function(){
+  var prose = document.getElementById('proseContent');
+  var toc = document.getElementById('postToc');
+  if (!prose || !toc) return;
+  var heads = prose.querySelectorAll('h2, h3');
+  if (heads.length < 2) { toc.hidden = true; return; }
+  toc.hidden = false;
+  heads.forEach(function(h, i){
+    var id = 'sec-' + (i+1);
+    h.id = id;
+    var a = document.createElement('a');
+    a.href = '#' + id;
+    a.textContent = h.textContent;
+    if (h.tagName === 'H3') a.className = 'lv3';
+    else a.className = 'lv2';
+    toc.appendChild(a);
+  });
+})();
+</script>

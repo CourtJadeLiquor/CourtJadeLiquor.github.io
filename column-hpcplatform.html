@@ -1,0 +1,58 @@
+---
+layout: page
+title: "HPCPlatform：从零搭建高性能算子平台"
+description: "12 篇完整文档，从架构到每一个易错点。"
+permalink: /column-hpcplatform.html
+---
+
+{% assign col = site.data.columns.hpcplatform %}
+{% assign articles = site.articles | sort: 'order' %}
+
+<div class="page-head">
+  <div class="container">
+    <span class="eyebrow">Column · {{ col.title | default: 'HPCPlatform' }}</span>
+    <h1>{{ col.title | default: 'HPCPlatform：从零搭建高性能算子平台' }}</h1>
+    <p>{{ col.description | default: '以 C++17 构建的算子学习与研究平台。' }}</p>
+  </div>
+</div>
+
+<section class="section" style="padding-top:6px">
+  <div class="container">
+    <div class="card column-card reveal" style="padding:34px">
+      <span class="chip">{{ articles | size }} 篇 · 全部开源文档</span>
+      <h3 style="font-family:var(--serif);font-size:26px;margin:0 0 12px;letter-spacing:.04em">
+        HPCPlatform：从零搭建高性能算子平台
+      </h3>
+      <p style="color:var(--text-dim);max-width:760px;margin:0">{{ col.description | default: '' }}</p>
+
+      {% assign sections = '总览|问答与易错点|版本演进' | split: '|' %}
+      {% for section_name in sections %}
+        {% assign section_articles = '' | split: '' %}
+        {% for art in articles %}
+          {% if art.section == section_name %}
+            {% assign section_articles = section_articles | push: art %}
+          {% endif %}
+        {% endfor %}
+        {% if section_articles.size > 0 %}
+          <h3 style="font-family:var(--serif);font-size:16px;letter-spacing:.1em;margin:26px 0 8px;color:var(--jade-soft)">{{ section_name }}</h3>
+          <div>
+            {% for art in section_articles %}
+              <a class="chapter-link" href="{{ art.url | relative_url }}">
+                <span class="num">{{ art.order | default: forloop.index | string_format: '%02d' }}</span>
+                <span>{{ art.title }}</span>
+                <span class="more">阅读 →</span>
+              </a>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endfor %}
+
+      <div style="margin-top:30px;display:flex;gap:14px;flex-wrap:wrap">
+        {% if col.github %}
+          <a class="btn btn-ghost" href="{{ col.github }}" target="_blank">GitHub · hpcplatform</a>
+        {% endif %}
+        <a class="btn btn-ghost" href="{{ '/topics/operator-dev.html' | relative_url }}">相关专题：算子开发</a>
+      </div>
+    </div>
+  </div>
+</section>

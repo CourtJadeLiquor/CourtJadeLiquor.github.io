@@ -1,0 +1,86 @@
+// ==========================================================================
+// 组件：Card / Button / Avatar / Reveal
+// ==========================================================================
+
+// ---- Card ----
+.card {
+  position: relative; display: block; padding: 28px 26px; border-radius: var(--radius);
+  border: 1px solid var(--line); color: var(--text);
+  background: var(--card-bg);
+  transition: transform 0.28s ease, border-color 0.28s ease, box-shadow 0.28s ease, background 0.4s ease;
+  overflow: hidden;
+}
+.card::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: var(--card-glow);
+  opacity: 0; transition: opacity 0.3s;
+}
+.card:hover { color: var(--text); transform: translateY(-4px); border-color: var(--line-strong); box-shadow: var(--shadow); }
+.card:hover::after { opacity: 1; }
+
+.card-icon {
+  width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+  margin-bottom: 18px; border: 1px solid var(--line); background: var(--focus-ring);
+}
+.card-icon svg { width: 22px; height: 22px; stroke: var(--jade); fill: none; stroke-width: 1.5; }
+.card h3 { font-family: var(--serif); font-size: 19px; margin: 0 0 8px; font-weight: 600; letter-spacing: 0.03em; }
+.card p { margin: 0; color: var(--text-dim); font-size: 14px; line-height: 1.75; }
+.card .card-meta { margin-top: 16px; font-size: 12px; color: var(--muted); letter-spacing: 0.06em; display: flex; gap: 12px; align-items: center; }
+.card .arrow { margin-left: auto; color: var(--jade); transition: transform 0.25s; }
+.card:hover .arrow { transform: translateX(4px); }
+
+// Column 卡片
+.column-card { padding: 32px; }
+.column-card .chapters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 22px; }
+.mini-chapter {
+  padding: 14px 16px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--mini-bg); color: var(--text-dim); font-size: 13px;
+  transition: border-color 0.2s, color 0.2s;
+}
+.mini-chapter:hover { color: var(--jade); border-color: var(--line-strong); }
+.mini-chapter span {
+  display: block; font-size: 10.5px; letter-spacing: 0.16em;
+  color: var(--muted); margin-bottom: 6px; text-transform: uppercase;
+}
+
+// ---- Button ----
+.btn {
+  display: inline-flex; align-items: center; gap: 8px; padding: 11px 24px; border-radius: 999px;
+  font-size: 14px; font-weight: 500; letter-spacing: 0.04em; border: 0; cursor: pointer;
+  font-family: inherit;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s, color 0.2s;
+}
+.btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-text); box-shadow: var(--btn-primary-shadow); }
+.btn-primary:hover { color: var(--btn-primary-text); transform: translateY(-2px); box-shadow: var(--btn-primary-shadow-hover); }
+.btn-ghost { border: 1px solid var(--line-strong); color: var(--text); background: var(--btn-ghost-bg); }
+.btn-ghost:hover { color: var(--jade); border-color: var(--jade); transform: translateY(-2px); }
+
+// ---- Avatar ----
+.avatar {
+  width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center;
+  font-family: var(--serif); font-size: 17px; color: var(--avatar-text);
+  background: linear-gradient(135deg, var(--jade-soft), var(--jade));
+  flex: none; user-select: none; box-shadow: 0 6px 18px -8px var(--aura);
+}
+
+// ---- Reveal 动画 ----
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s ease, transform 0.7s ease; }
+.reveal.in { opacity: 1; transform: none; }
+
+// ---- Cursor Aura（精简版，无 spark/ripple）----
+.cursor-aura {
+  position: fixed;
+  left: 0; top: 0; width: 560px; height: 560px;
+  margin: -280px 0 0 -280px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, var(--aura), transparent 62%);
+  filter: blur(30px);
+  opacity: 0;
+  transform: translate3d(-1200px, -1200px, 0);
+  transition: opacity 0.5s ease;
+  will-change: transform;
+  mix-blend-mode: var(--aura-blend);
+}
+.cursor-aura.visible { opacity: 0.75; }

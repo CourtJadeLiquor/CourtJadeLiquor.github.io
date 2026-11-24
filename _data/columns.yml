@@ -1,0 +1,10 @@
+# 专栏元数据 — 被 column-hpcplatform.html 等页面读取
+hpcplatform:
+  title: "HPCPlatform：从零搭建高性能算子平台"
+  description: >
+    以 C++17 构建的算子学习与研究平台：统一的 Tensor / Context 抽象、可插拔后端、
+    CPU 多版本优化、CUDA 加速与配置驱动调用。
+  subtitle: >
+    本专栏收录项目全部技术文档——架构设计、配置驱动、八篇问答易错点与版本演进，
+    按阅读顺序整理为一条完整路径。
+  github: "https://github.com/CourtJadeLiquor/hpcplatform"

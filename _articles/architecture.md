@@ -1,0 +1,618 @@
+---
+layout: article
+title: "hpcplatform 架构设计"
+date: 2026-11-01
+column: "HPCPlatform"
+section: "总览"
+order: 1
+permalink: /articles/architecture/
+tags: ["HPCPlatform", "架构", "设计原则"]
+breadcrumbs:
+  - name: "首页"
+    url: "/"
+  - name: "专栏"
+    url: "/columns.html"
+  - name: "HPCPlatform"
+    url: "/column-hpcplatform.html"
+  - name: "总览"
+---
+
+<hr>
+<h2>1. 设计原则</h2>
+<ol><li><strong>显式优先于隐式</strong>：不做自动探测、自动回退、静默转换；后端、内核级别、布局都由调用方显式选择。</li><li><strong>可复现</strong>：同一算子的 CPU 各版本必须位精确；只有跨后端才允许有限容差。</li><li><strong>描述与存储分离</strong>：<code>Tensor</code> 只是元数据（shape/strides/offset），内存由 <code>Buffer</code>/<code>MemoryManager</code> 管理。</li><li><strong>后端可插拔、核心零第三方依赖</strong>：<code>core</code> 不依赖 OpenCV/CUDA/TBB；可选能力全部由编译期开关门控。</li><li><strong>无异常</strong>：在 <code>-fno-exceptions</code> 约束下使用 <code>Status</code>/<code>Result</code> 错误模型。</li><li><strong>错误码三分类</strong>：参数错误 <code>kInvalidArgument</code>、编译期未启用 <code>kUnsupported</code>、注册表缺内核 <code>kNotImplemented</code>，绝不静默降级。</li><li><strong>开闭原则</strong>：新增算子以"新增文件夹 + 一行式登记"为主，尽量不改动算子间共享的实现文件。</li><li><strong>算子自治</strong>：每个算子文件夹是完备解决方案，包含入口、全部版本实现、构建、测试、基准与说明文档。</li></ol>
+<hr>
+<h2>2. 总体架构</h2>
+<h3>2.1 分层</h3>
+
+
+{% highlight text %}
+include/hpcplatform/**                ← 唯一公共 API 面（调用者只见这里）
+                  operator.h 等                 ← 含 Operator 基类与 LoadOperators
+                        ↑
+                   src/operator/                ← 配置驱动：YAML → Operator 对象（hpcplatform_WITH_YAML）
+                        ↑                       ← 描述符注册表、环境解析、fail-fast 校验
+                  src/framework/                ← 注册表、图像工具、dtype 分发、剖析与统计
+                   ↑         ↑
+        src/backends/       src/ops/
+        （能力服务）          （算子自治，每算子一个文件夹）
+{% endhighlight %}
+
+
+<p><code>src/operator/</code>（<code>hpcplatform_WITH_YAML</code>）是位于 <code>ops</code>/<code>framework</code> 之上的更高一层：读取配置文件，经描述符注册表把每个条目构造为已绑定参数的 <code>Operator</code> 对象，交给业务层持有并自行编排执行。它不构建计算图，也不假设图像算法，只是把已有算子封装成可配置的对象工具。未启用 <code>hpcplatform_WITH_YAML</code> 时该层不编译，公共 <code>LoadOperators</code> 返回 <code>kUnsupported</code>。</p>
+<p>算子自己的后端实现文件（<code>*_cuda.cu</code>、<code>*_opencv.cpp</code>）位于算子文件夹内，按需引用对应后端的服务头。</p>
+<h3>2.2 依赖规则</h3>
+<ul><li><strong>R1</strong> 公共头（<code>include/hpcplatform/**</code>）不得包含任何 <code>src/**</code>。可选能力用 <code>#ifdef hpcplatform_WITH_*</code> 门控。</li><li><strong>R2</strong> <code>src/core/**</code> 不得包含 <code>framework</code>、<code>backends</code>、<code>ops</code>。<code>Backend</code> 作为 core 的内部契约定义在 <code>src/core/backend.h</code>。</li><li><strong>R3</strong> <code>src/framework/**</code> 依赖 <code>core</code> 与公共头中的稳定类型（<code>ops/op.h</code>、<code>ops/image.h</code>），不得包含 <code>backends</code> 或任何具体算子实现。</li><li><strong>R4</strong> <code>src/backends/**</code> 只依赖 <code>core</code>/<code>framework</code>，不得包含 <code>src/ops/**</code>。</li><li><strong>R5</strong> <code>src/ops/&lt;op&gt;/</code> 的入口与 CPU 实现只依赖公共头、<code>core</code>、<code>framework</code>、<code>ops/common</code> 与本文件夹内部头；只有 <code>*_cuda.cu</code> / <code>*_opencv.cpp</code> 等后端实现文件可以包含对应后端的服务头。</li><li><strong>R6</strong> 依赖单向无环。高层策略（算子）依赖低层能力（后端服务），后端永远不知道具体算子的存在。</li></ul>
+<hr>
+<h2>3. 目录结构</h2>
+
+
+{% highlight text %}
+include/hpcplatform/
+  core/                  # shape / dtype / error / device / memory / stream / tensor / context
+  ops/                   # image.h / op.h / resize.h / gaussian_blur.h / laplacian_pyramid.h / fourier.h / wavelet.h
+  interop/opencv.h       # cv::Mat 与 Tensor 的数据适配器
+  operator.h             # 配置驱动 Operator 基类与 LoadOperators（公共 API）
+  hpcplatform.h                 # 伞形头
+
+src/
+  core/                  # 数据结构与内部契约
+    backend.h            # Backend 接口（core 内部契约）
+    copy.cpp             # Backend::CopyBuffer / CopyTensorData / Context::Copy
+    copy.h               # CopyTensorData / ResolveOwningBackend 声明
+    tensor_iterator.h    # 内部 stride 逐元素遍历工具（非公共 API）
+  framework/             # 框架工具层
+    op_registry.{h,cpp}  # 三元组内核注册表
+    op_descriptor.{h,cpp}# 算子对象描述符注册表（config name → 构造器）
+    image_utils.h        # 图像布局解析与索引计算
+    dtype_dispatch.h     # u8/f32/f64 分发
+    compiler.h           # 编译器暗示宏
+    profiling.h          # 可选算子计时宏（默认零开销）
+    stats.h              # 按 MemoryKind 聚合的内存快照
+  backends/              # 能力服务层，不含算子实现
+    backend_internal.h   # 各后端创建函数与 CUDA 拷贝辅助
+    factory.cpp          # CreateBackend
+    cpu/                 # CPU 内存管理器与流
+    cuda/                # CUDA 内存管理器、流、设备辅助
+    opencv/              # OpenCV 张量访问适配
+    npu/                 # 占位后端
+  ops/
+    register_ops.cpp     # 唯一的算子注册清单
+    CMakeLists.txt       # 每算子一行 add_subdirectory
+    common/op_common.h   # ValidateInvocation / AllocateOutput
+    resize/              # 自治算子文件夹
+    gaussian_blur/
+    laplacian_pyramid/
+    fourier/
+    wavelet/
+  operator/              # 配置驱动算子对象层（hpcplatform_WITH_YAML）
+    operator_config.h     # 内部配置结构 OperatorInstanceConfig
+    yaml_parser.cpp       # YAML → OperatorsConfig
+    load_operators.cpp    # 常驻 stub：未启用时返回 kUnsupported
+    load_operators_real.cpp  # 真实实现（启用时编译）
+    register_descriptors.cpp # 描述符登记清单
+
+tests/
+  test_utils.h           # GoogleTest 胶水层（Status 断言）；gtest_main 提供入口
+  core/                  # shape / tensor / views / memory / backend / copy
+  backends/              # CUDA / OpenCV 后端级测试
+  perf/                  # 算子性能评估（按目标开启 profiling）
+  operator/              # 配置驱动算子对象测试（hpcplatform_WITH_YAML）
+                         # 每个测试文件一个 GoogleTest 可执行，由 CTest 注册
+samples/                 # 公共 API 使用样例
+  configs/operators.yaml # 配置驱动示例配置
+{% endhighlight %}
+
+
+<hr>
+<h2>4. 核心数据模型</h2>
+<h3>4.1 Tensor：描述符</h3>
+<p><code>Tensor</code> 持有 <code>shape</code>、<code>dtype</code>、<code>strides</code>、<code>offset</code>、<code>Buffer</code> 与弱引用的所属后端。创建方式：</p>
+<ul><li><code>Tensor::Create(backend, shape, dtype)</code>：由后端分配连续内存。</li><li><code>Tensor::Wrap(backend, data, shape, dtype, kind, deleter)</code>：接管外部内存，不分配、不拷贝；<code>deleter</code> 为空表示借用。</li></ul>
+<p><code>Slice</code> / <code>Reshape</code> / <code>Transpose</code> 等视图只改元数据，共享同一个 <code>Buffer</code>。</p>
+<h3>4.2 Buffer 与 MemoryManager</h3>
+<p><code>Buffer</code> 是引用计数的内存块，记录字节数、设备、<code>MemoryKind</code> 与可选 <code>deleter</code>。<code>MemoryManager</code> 负责按后端分配/释放，并暴露 <code>Stats()</code>（活动字节、峰值、分配次数）。CPU 使用缓存分配器；设备内存由对应后端管理。</p>
+<h3>4.3 Context 与 Backend</h3>
+<p><code>Context</code> 是用户可见的门面：创建设备上下文、分配张量、包装外部内存、同步拷贝。它持有 <code>shared_ptr&lt;Backend&gt;</code>，但公共头只前向声明 <code>Backend</code>，用户无法接触后端能力。</p>
+<p><code>Backend</code> 是 core 的内部契约，职责限定为：内存管理、流、<code>CopyBuffer</code>、后端 API 封装与数据转换。后端不实现具体算子。</p>
+<hr>
+<h2>5. 后端服务层</h2>
+<p><code>src/backends/</code> 是能力提供者，不是算子容器：</p>
+<table><thead><tr><th>服务</th><th>位置</th><th>使用者</th></tr></thead><tbody><tr><td>后端接口与拷贝默认实现</td><td><code>src/core/backend.h</code>、<code>src/core/copy.cpp</code></td><td><code>Context</code>、<code>Tensor</code></td></tr><tr><td>后端创建</td><td><code>src/backends/factory.cpp</code></td><td><code>Context::Create</code></td></tr><tr><td>CUDA 设备/启动辅助</td><td><code>src/backends/cuda/cuda_device_utils.h</code></td><td>各算子 <code>*_cuda.cu</code></td></tr><tr><td>OpenCV 张量访问</td><td><code>src/backends/opencv/opencv_tensor_access.{h,cpp}</code></td><td>各算子 <code>*_opencv.cpp</code></td></tr><tr><td>图像布局与索引</td><td><code>src/framework/image_utils.h</code></td><td>图像算子所有版本</td></tr></tbody></table>
+<p>设计要点：</p>
+<ul><li>后端只暴露窄接口与稳定的服务头，算子依赖服务而非实现细节（依赖倒置）。</li><li>非 CPU 后端只接受 <code>kNaive</code> 级别的内核；<code>CopyBuffer</code> 不做主机中转。</li><li><code>BackendType</code>/<code>Device</code> 保持公共，因为 <code>Context::Create</code> 需要；但它们只是枚举/值类型，不暴露能力。</li><li><code>interop/opencv.h</code> 的 <code>CopyFromCvMat</code>/<code>CopyToCvMat</code> 属于对外数据适配器，不是后端能力，因此保留在公共 API。</li></ul>
+<hr>
+<h2>6. 算子自治结构</h2>
+<h3>6.1 文件夹契约</h3>
+<p>每个算子文件夹是一个完备解决方案：</p>
+
+
+{% highlight text %}
+src/ops/&lt;op&gt;/
+  &lt;op&gt;.cpp                 # 入口：校验 → 查注册表 → 分配输出 → 调内核
+  &lt;op&gt;_internal.h          # 参数结构体、内核原型、注册声明
+  &lt;op&gt;_cpu.h               # CPU 共享骨架（可选）
+  &lt;op&gt;_cpu_naive.cpp       # 参考实现
+  &lt;op&gt;_cpu_omp.cpp         # hpcplatform_WITH_OPENMP
+  &lt;op&gt;_cpu_tbb.cpp         # hpcplatform_WITH_TBB
+  &lt;op&gt;_cpu_simd.cpp        # hpcplatform_ENABLE_SIMD
+  &lt;op&gt;_cpu_avx2.cpp        # hpcplatform_COMPILER_HAS_AVX2（独立 OBJECT 库）
+  &lt;op&gt;_cuda.cu             # hpcplatform_WITH_CUDA
+  &lt;op&gt;_opencv.cpp          # hpcplatform_WITH_OPENCV
+  CMakeLists.txt           # 逐文件宏门控 + 挂测试与基准
+  tests/                   # 正确性与位精确对拍
+  benchmark/               # 各版本耗时
+  README.md                # 版本矩阵、容差约定、基准数据
+{% endhighlight %}
+
+
+<p>契约要点：</p>
+<ul><li><strong>文件唯一归属</strong>：算子文件夹内的文件不被其他算子触碰。</li><li><strong>版本矩阵</strong>：README 维护 <code>(后端, CpuKernelLevel)</code> 与实现文件、对拍方式的对应表。</li><li><strong>参数结构体归位</strong>：<code>ResizeParams</code>、<code>GaussianBlurParams</code> 等定义在各自 <code>*_internal.h</code>。</li><li><strong>入口骨架固定</strong>：校验 → 查注册表 → 分配输出 → 调内核；公共头只声明 API。</li><li><strong>版本不齐不是错误</strong>：某组合没有实现时，注册表返回 <code>kNotImplemented</code>，<code>SupportsKernelLevel</code> 返回 false。</li><li><strong>AVX2 构建</strong>：AVX2 翻译单元编成独立 OBJECT 库（<code>-mavx2</code> + <code>hpcplatform_ARCH_AVX2</code>），再嵌入 <code>hpcplatform</code>，避免污染整个静态库的可移植性。</li></ul>
+<h3>6.2 内核纪律</h3>
+<ul><li>CPU 各版本之间位精确（<code>memcmp</code> 对拍 naive 基准）。</li><li>跨后端使用 <code>1e-4</code> 相对容差；u8 规则见 <a href="qa-testing.html"><code>qa/testing.md</code></a>。</li><li>归约型算子（如高斯）必须保持与 naive 一致的累加顺序，SIMD/并行只能改变任务划分，不能改变单像素求和顺序。</li><li><code>CopyBuffer</code> 的同步语义、非 CPU 后端级别限制、Context 生命周期规则见 <a href="qa-context-copy.html"><code>qa/context_copy.md</code></a>。</li></ul>
+<hr>
+<h2>7. 注册与分发</h2>
+<h3>7.1 三元组键</h3>
+<p>内核注册键为：</p>
+
+
+{% highlight text %}
+(OpKind, BackendType, CpuKernelLevel) → OpKernelFn
+{% endhighlight %}
+
+
+<p><code>FindKernel</code> 对未命中严格区分三种情况：参数不合法、后端未编译、内核未实现，分别映射到三个错误码。</p>
+<h3>7.2 显式注册清单</h3>
+<p><code>src/ops/register_ops.cpp</code> 是唯一的注册入口：</p>
+<pre><code class="language-cpp">void RegisterAllKernels() {
+  RegisterResizeKernels();
+  RegisterGaussianBlurKernels();
+  RegisterLaplacianPyramidKernels();
+  RegisterFourierKernels();
+  RegisterWaveletKernels();
+}</code></pre>
+<p>每个算子的 <code>Register&lt;Op&gt;Kernels()</code> 定义在本算子文件夹内，一次性注册它的全部版本（CPU 各级 + CUDA + OpenCV）。</p>
+<p><strong>不使用静态自注册</strong>：静态库中未被引用的翻译单元可能根本不会被链接器拉入，自注册对象的构造函数可能不执行，导致内核静默缺失；补 <code>--whole-archive</code> 等链接器魔法与"显式优先"原则冲突。显式清单多一行登记，换来行为完全可预期。</p>
+<h3>7.3 描述符注册表（高阶：构造算子对象）</h3>
+<p>与 7.1 的<strong>内核注册表</strong>（低阶：<code>(OpKind, BackendType, CpuKernelLevel) → OpKernelFn</code>）不同，<code>src/framework/op_descriptor.{h,cpp}</code> 维护一张<strong>高阶描述符注册表</strong>：<code>config op name → OpDescriptor</code>。描述符知道一个算子需要哪些参数、如何校验、如何构造一个已绑定参数的 <code>Operator</code> 对象，但不关心具体后端的内核函数。</p>
+<pre><code class="language-cpp">struct OpDescriptor {
+  const char* Name() const;        // 配置里的 op 名字，如 "resize"
+  OpKind Kind() const;             // 对应内核注册表的 OpKind
+  Status ValidateParams(const ParamMap&amp;) const;
+  Result&lt;std::unique_ptr&lt;Operator&gt;&gt; Construct(name, context, cpu_level, params) const;
+};</code></pre>
+<p>分层职责：</p>
+<ul><li><strong>描述符注册表</strong>回答"这个 <code>op</code> 名字对应哪个对象构造器"。</li><li><strong>内核注册表</strong>回答"这个 <code>(OpKind, backend, level)</code> 有没有内核函数可用"。</li><li><code>LoadOperators</code>（<code>src/operator/</code>）串起两者：先按名字找描述符做参数校验，再用 <code>FindKernel(desc-&gt;Kind(), backend, level)</code> 确认后端可用，全部通过后才 <code>Construct</code>。任一失败整体返回错误、不构造任何对象（fail-fast，不静默回退）。</li></ul>
+<p>描述符同样走<strong>显式登记清单</strong>（<code>src/operator/register_descriptors.cpp</code> 的 <code>RegisterAllOpDescriptors()</code>），与内核清单同因同果，不使用静态自注册。</p>
+<hr>
+<h2>8. 框架工具层</h2>
+<h3>8.1 归置规则</h3>
+<ul><li><strong>逐像素热路径辅助</strong>：<code>inline</code> 定义在 <code>src/framework/*.h</code>，随使用方内联。例如 <code>ImageByteOffset</code>。</li><li><strong>一次性冷路径函数</strong>：声明在头文件，定义落 <code>.cpp</code>，改实现只重编一个 TU。当前 <code>image_utils.h</code> 仍整体 header-only，新增冷路径函数时按此规则拆分。</li><li>不为了"统一"把热函数改成跨 TU 调用，除非有测量结果支撑。</li></ul>
+<h3>8.2 剖析与统计</h3>
+<ul><li><code>profiling.h</code>：<code>hpcplatform_PROFILE_SCOPE</code> / <code>hpcplatform_PROFILE_OP</code>，默认展开为空语句；只对需要剖析的目标定义 <code>hpcplatform_ENABLE_PROFILING=1</code>。</li><li><code>stats.h</code>：<code>SnapshotMemory(Context&amp;)</code> 按 <code>MemoryKind</code> 聚合活动字节、峰值与分配次数，用于峰值和泄漏检查。</li><li>算子 <code>benchmark/</code> 直接使用 <code>std::chrono::steady_clock</code>，不强依赖剖析宏。</li><li>性能评估用例见 <code>tests/perf/test_operator_perf.cpp</code>。</li></ul>
+<h3>8.3 dtype 分发</h3>
+<p><code>dtype_dispatch.h</code> 提供 <code>DispatchImageDType</code>（u8/f32/f64）。类型分支集中在入口，内核实现保持单一类型模板，避免在每个版本里重复 switch。</p>
+<hr>
+<h2>9. 构建与开关</h2>
+<ul><li>可选后端：<code>hpcplatform_WITH_CUDA</code>、<code>hpcplatform_WITH_OPENCV</code>、<code>hpcplatform_WITH_YAML</code>，CPU 并行与 SIMD：<code>hpcplatform_ENABLE_OPENMP</code>、<code>hpcplatform_ENABLE_TBB</code>、<code>hpcplatform_ENABLE_SIMD</code>；均为默认 ON。</li><li>配置驱动算子对象：<code>hpcplatform_WITH_YAML</code> 启用后引入 yaml-cpp，提供 <code>LoadOperators</code> 与 <code>Operator</code> 对象；关闭时 <code>LoadOperators</code> 返回 <code>kUnsupported</code>。</li><li>剖析开关：<code>hpcplatform_ENABLE_PROFILING</code> 按目标开启，库默认零开销。</li><li>各算子通过自己的 <code>CMakeLists.txt</code> 逐文件门控；未启用时对应翻译单元不参与编译。</li><li>默认只维护一条全特性构建链：<code>build_debug</code>（Debug + ASan/UBSan）或 <code>build_release</code>（Release）；测试统一使用 GoogleTest + CTest。旧的 default / full / asan 三棵树验证矩阵已废弃。</li><li>打包：<code>cpack -G TGZ</code> / <code>cpack -G DEB</code>，安装布局由根 <span class="code-link" title="仓库路径"><code>CMakeLists.txt</code></span> 的 <code>install()</code> 规则决定。</li></ul>
+<hr>
+<h2>10. 扩展指南</h2>
+<p><strong>新增算子 X</strong>：</p>
+<ol><li><code>include/hpcplatform/ops/x.h</code> —— 公共 API。</li><li><code>include/hpcplatform/ops/op.h</code> —— <code>OpKind</code> 追加枚举值（append-only）。</li><li><code>src/ops/x/</code> —— 自治文件夹（入口、内部头、各版本实现、CMake、tests、benchmark、README）。</li><li><code>src/ops/register_ops.cpp</code> —— 加一行 <code>RegisterXKernels();</code>。</li><li><code>src/ops/CMakeLists.txt</code> —— 加一行 <code>add_subdirectory(x)</code>。</li><li><code>include/hpcplatform/hpcplatform.h</code> —— 加一行 include。</li></ol>
+<p><strong>给已有算子加后端实现</strong>：算子文件夹加一个实现文件 + <code>Register&lt;Op&gt;Kernels()</code> 加一行宏门控注册 + 算子 CMake 加一行。core/backends/其他算子零改动。</p>
+<p><strong>新增后端 B</strong>：<code>src/backends/b/</code>（内存管理器 + 流）+ <code>src/backends/factory.cpp</code> 加一个 <code>case</code> + 构建开关。各算子自愿增量添加 <code>*_b.cpp</code>，不添加也不破坏现有构建。</p>
+<p><strong>让已有算子支持配置驱动实例化</strong>（<code>hpcplatform_WITH_YAML</code>，详见 <a href="operator-config.html"><code>operator_config.md</code></a>）：</p>
+<ol><li>公共头 <code>include/hpcplatform/ops/&lt;op&gt;.h</code> 追加 <code>class &lt;Op&gt;Operator : public Operator</code>（持有强类型参数，<code>Run(...)</code> 调已有公共函数）。</li><li>算子文件夹新增 <code>&lt;op&gt;_operator.cpp</code>：实现 <code>&lt;Op&gt;Operator</code> + <code>&lt;Op&gt;Descriptor : public OpDescriptor</code>（<code>ValidateParams</code> 校验必填/类型，<code>Construct</code> 解析并构造对象）+ <code>Register&lt;Op&gt;Descriptor()</code>。</li><li>算子 <code>CMakeLists.txt</code> 在 <code>if(hpcplatform_WITH_YAML)</code> 下追加该 <code>.cpp</code>。</li><li><code>src/operator/register_descriptors.cpp</code> 的 <code>RegisterAllOpDescriptors()</code> 加一行 <code>Register&lt;Op&gt;Descriptor();</code>。</li><li>在 <code>docs/operator_config.md</code> 登记该算子的参数表。</li></ol>
+<p>core / framework / 其他算子均零改动；未启用 <code>hpcplatform_WITH_YAML</code> 时新文件不参与编译，不影响默认构建。</p>
+<hr>
+<h2>11. 关键设计模式</h2>
+<table><thead><tr><th>模式</th><th>落点</th><th>作用</th></tr></thead><tbody><tr><td>Strategy</td><td>每算子多版本内核 + <code>CpuKernelLevel</code></td><td>同一语义的不同实现可替换</td></tr><tr><td>Factory</td><td><code>CreateBackend</code></td><td>屏蔽后端构造细节</td></tr><tr><td>Registry</td><td><code>op_registry.{h,cpp}</code></td><td>三元组到内核函数的延迟绑定</td></tr><tr><td>描述符注册表</td><td><code>op_descriptor.{h,cpp}</code>、<code>register_descriptors.cpp</code></td><td>配置名到算子对象构造器的延迟绑定，与内核注册表分层</td></tr><tr><td>Facade</td><td><code>Context</code></td><td>对调用者隐藏后端与内存管理</td></tr><tr><td>Adapter</td><td><code>interop/opencv.h</code>、<code>opencv_tensor_access</code></td><td>外部 <code>cv::Mat</code> 与 <code>Tensor</code> 互操作</td></tr><tr><td>Template Method</td><td><code>&lt;op&gt;_cpu.h</code> 共享骨架</td><td>固定遍历/边界/累加骨架，版本只填热点</td></tr><tr><td>RAII</td><td><code>Buffer</code>、<code>Result</code>、<code>Stream</code></td><td>资源与错误生命周期自动收敛</td></tr><tr><td>编译期多态</td><td><code>hpcplatform_WITH_*</code> / <code>hpcplatform_ENABLE_*</code></td><td>零运行时开销的可选能力</td></tr></tbody></table>
+<hr>
+<h2>12. UML 类图</h2>
+<p>类图使用 Mermaid <code>classDiagram</code>（Markdown 原生渲染，无需额外运行时）。按模块拆分为三张图，避免单图过大。</p>
+<h3>12.1 core 数据模型</h3>
+<pre><code class="language-mermaid">classDiagram
+  direction LR
+
+  class Shape {
+    -int rank_
+    -int64_t[] dims_
+    +Rank() int
+    +Dim(index) int64_t
+    +Numel() int64_t
+    +IsScalar() bool
+    +Validate() Status
+    +ToString() string
+  }
+
+  class Device {
+    +DeviceType type
+    +int index
+    +ToString() string
+  }
+
+  class Buffer {
+    -void* data_
+    -size_t bytes_
+    -Device device_
+    -MemoryKind kind_
+    -Deleter deleter_
+    +data() void*
+    +size() size_t
+    +device() Device
+    +kind() MemoryKind
+  }
+
+  class MemoryManager {
+    &lt;&lt;abstract&gt;&gt;
+    +device() Device
+    +Allocate(bytes, alignment) Result
+    +Copy(dst, src, stream) Status
+    +Stats() MemoryStats
+  }
+
+  class Stream {
+    &lt;&lt;abstract&gt;&gt;
+    +device() Device
+    +Synchronize() Status
+    +synchronous() bool
+  }
+
+  class Backend {
+    &lt;&lt;abstract&gt;&gt;
+    +type() BackendType
+    +device() Device
+    +memory() MemoryManager
+    +stream() Stream
+    +Synchronize() Status
+    +CopyBuffer(dst, src, bytes, stream) Status
+    +SupportsDType(dtype) bool
+    +SupportsKernelLevel(level) bool
+    +Describe() string
+  }
+
+  class Context {
+    -shared_ptr~Backend~ backend_
+    +Create(backend, deviceIndex) Result
+    +AllocateTensor(shape, dtype) Result
+    +Wrap(data, shape, dtype) Result
+    +Copy(dst, src, stream) Status
+    +memory() MemoryManager
+    +stream() Stream
+    +Synchronize() Status
+  }
+
+  class Tensor {
+    -shared_ptr~Buffer~ buffer_
+    -weak_ptr~Backend~ owner_
+    -Shape shape_
+    -DataType dtype_
+    -int64_t[] strides_
+    -size_t offset_
+    +Create(backend, shape, dtype) Result
+    +Wrap(backend, data, shape, dtype) Result
+    +View(shape) Result
+    +Slice(dim, begin, end) Result
+    +Permute(order) Result
+    +Reshape(shape) Result
+    +Clone() Result
+    +IsContiguous() bool
+  }
+
+  class Status {
+    -StatusCode code_
+    -string message_
+    +ok() bool
+    +code() StatusCode
+    +message() string
+  }
+
+  class Result {
+    &lt;&lt;template T&gt;&gt;
+    -bool ok_
+    -T value_
+    -Status status_
+    +ok() bool
+    +value() T
+    +status() Status
+  }
+
+  class MemoryStats {
+    +size_t allocated_bytes
+    +size_t peak_bytes
+    +size_t allocation_count
+  }
+
+  class BackendType {
+    &lt;&lt;enumeration&gt;&gt;
+    kNativeCpu
+    kOpenCV
+    kCUDA
+    kNPU
+  }
+
+  class DataType {
+    &lt;&lt;enumeration&gt;&gt;
+    kUInt8
+    kFloat32
+    kFloat64
+  }
+
+  class MemoryKind {
+    &lt;&lt;enumeration&gt;&gt;
+    kHost
+    kHostPinned
+    kDevice
+  }
+
+  Tensor *-- Buffer : owns
+  Tensor --&gt; Shape
+  Tensor --&gt; Device
+  Tensor o-- Backend : weak owner
+  Context o-- Backend : binds
+  Context --&gt; MemoryManager : memory()
+  Context --&gt; Stream : stream()
+  Backend o-- MemoryManager
+  Backend o-- Stream
+  MemoryManager ..&gt; Buffer : allocates
+  MemoryManager ..&gt; MemoryStats : reports
+  Buffer --&gt; Device
+  Buffer --&gt; MemoryKind
+  Result ..&gt; Status : carries
+  Context ..&gt; Result : returns
+  Tensor ..&gt; Result : returns</code></pre>
+<h3>12.2 后端实现</h3>
+<pre><code class="language-mermaid">classDiagram
+  direction TB
+
+  class Backend {
+    &lt;&lt;abstract&gt;&gt;
+    +type() BackendType
+    +device() Device
+    +memory() MemoryManager
+    +stream() Stream
+    +CopyBuffer(dst, src, bytes, stream) Status
+    +SupportsKernelLevel(level) bool
+  }
+
+  class MemoryManager {
+    &lt;&lt;abstract&gt;&gt;
+    +Allocate(bytes, alignment) Result
+    +Copy(dst, src, stream) Status
+    +Stats() MemoryStats
+  }
+
+  class Stream {
+    &lt;&lt;abstract&gt;&gt;
+    +Synchronize() Status
+    +synchronous() bool
+  }
+
+  class CpuBackend {
+    -Device device_
+    -CpuMemoryManager memory_
+    -CpuStream stream_
+    +SupportsKernelLevel(level) bool
+    +Describe() string
+  }
+
+  class CudaBackend {
+    -Device device_
+    -CudaMemoryManager memory_
+    -CudaStream stream_
+    -string device_name_
+    +Initialize() Status
+    +CopyBuffer(dst, src, bytes, stream) Status
+    +SupportsKernelLevel(level) bool
+  }
+
+  class OpenCvBackend {
+    -Device device_
+    -OpenCvMemoryManager memory_
+    -CpuStream stream_
+    +SupportsDType(dtype) bool
+    +SupportsKernelLevel(level) bool
+  }
+
+  class NpuBackend {
+    &lt;&lt;placeholder&gt;&gt;
+    +CreateNpuBackend(index) Result
+  }
+
+  class CpuMemoryManager {
+    -Device device_
+    -shared_ptr~CpuAllocatorState~ state_
+    +Allocate(bytes, alignment) Result
+    +Copy(dst, src, stream) Status
+    +Stats() MemoryStats
+  }
+
+  class CudaMemoryManager {
+    -Device device_
+    -shared_ptr~CudaAllocatorState~ state_
+    +Allocate(bytes, alignment) Result
+    +Copy(dst, src, stream) Status
+    +Stats() MemoryStats
+  }
+
+  class OpenCvMemoryManager {
+    -Device device_
+    -shared_ptr~OpenCvAllocatorState~ state_
+    +Allocate(bytes, alignment) Result
+    +Copy(dst, src, stream) Status
+    +Stats() MemoryStats
+  }
+
+  class CpuStream {
+    -Device device_
+    +Synchronize() Status
+    +synchronous() bool
+  }
+
+  class CudaStream {
+    -Device device_
+    -cudaStream_t stream_
+    +Initialize() Status
+    +Synchronize() Status
+    +synchronous() bool
+    +handle() cudaStream_t
+  }
+
+  class CpuAllocatorState {
+    +vector~CpuBlock~ free_blocks
+    +atomic~size_t~ allocated_bytes
+    +atomic~size_t~ peak_bytes
+    +Release(data, bytes) void
+  }
+
+  class CudaAllocatorState {
+    +int device_index
+    +vector~CudaBlock~ free_blocks
+    +atomic~size_t~ allocated_bytes
+    +atomic~size_t~ peak_bytes
+    +Release(raw, data, bytes) void
+  }
+
+  class OpenCvAllocatorState {
+    +atomic~size_t~ allocated_bytes
+    +atomic~size_t~ peak_bytes
+  }
+
+  class BackendFactory {
+    &lt;&lt;utility&gt;&gt;
+    +CreateBackend(type, deviceIndex) Result
+  }
+
+  Backend &lt;|-- CpuBackend
+  Backend &lt;|-- CudaBackend
+  Backend &lt;|-- OpenCvBackend
+
+  MemoryManager &lt;|.. CpuMemoryManager
+  MemoryManager &lt;|.. CudaMemoryManager
+  MemoryManager &lt;|.. OpenCvMemoryManager
+
+  Stream &lt;|.. CpuStream
+  Stream &lt;|.. CudaStream
+
+  CpuBackend *-- CpuMemoryManager
+  CpuBackend *-- CpuStream
+  CudaBackend *-- CudaMemoryManager
+  CudaBackend *-- CudaStream
+  OpenCvBackend *-- OpenCvMemoryManager
+  OpenCvBackend *-- CpuStream
+
+  CpuMemoryManager o-- CpuAllocatorState
+  CudaMemoryManager o-- CudaAllocatorState
+  OpenCvMemoryManager o-- OpenCvAllocatorState
+
+  BackendFactory ..&gt; Backend : creates
+  BackendFactory ..&gt; NpuBackend : placeholder</code></pre>
+<h3>12.3 算子、注册表与分发</h3>
+<pre><code class="language-mermaid">classDiagram
+  direction LR
+
+  class OpContext {
+    +Context* context
+    +Stream* stream
+    +CpuKernelLevel cpu_level
+  }
+
+  class Context {
+    +AllocateTensor(shape, dtype) Result
+    +Copy(dst, src, stream) Status
+  }
+
+  class Tensor {
+    +shape() Shape
+    +dtype() DataType
+    +IsContiguous() bool
+  }
+
+  class OpKind {
+    &lt;&lt;enumeration&gt;&gt;
+    kResize
+    kGaussianBlur
+    kLaplacianPyramid
+    kFourierTransform
+    kWaveletTransform
+  }
+
+  class CpuKernelLevel {
+    &lt;&lt;enumeration&gt;&gt;
+    kNaive
+    kOpenMP
+    kSimdGeneric
+    kSimdAvx2
+    kSimdNeon
+    kTbb
+  }
+
+  class BackendType {
+    &lt;&lt;enumeration&gt;&gt;
+    kNativeCpu
+    kOpenCV
+    kCUDA
+  }
+
+  class OpKernelFn {
+    &lt;&lt;typedef&gt;&gt;
+    Status(OpContext, Tensor, Tensor*, void*, Tensor*)
+  }
+
+  class KernelRegistry {
+    &lt;&lt;utility&gt;&gt;
+    +RegisterKernel(op, backend, level, fn) void
+    +FindKernel(op, backend, level) Result
+    +HasKernel(op, backend, level) bool
+    +HasAnyKernel(backend, level) bool
+  }
+
+  class ResizeModule {
+    &lt;&lt;module&gt;&gt;
+    +Resize(context, input, h, w) Result
+    +RegisterResizeKernels() void
+  }
+
+  class GaussianBlurModule {
+    &lt;&lt;module&gt;&gt;
+    +GaussianBlur(context, input, ksize, sigma) Result
+    +RegisterGaussianBlurKernels() void
+  }
+
+  class LaplacianPyramidModule {
+    &lt;&lt;module&gt;&gt;
+    +BuildLaplacianPyramid(context, input, levels) Result
+    +RegisterLaplacianPyramidKernels() void
+  }
+
+  class FourierModule {
+    &lt;&lt;module&gt;&gt;
+    +FourierTransform(context, input) Result
+    +RegisterFourierKernels() void
+  }
+
+  class WaveletModule {
+    &lt;&lt;module&gt;&gt;
+    +WaveletTransform(context, input, kind) Result
+    +RegisterWaveletKernels() void
+  }
+
+  OpContext --&gt; Context
+  OpContext --&gt; Stream
+  OpContext --&gt; CpuKernelLevel
+  OpKernelFn ..&gt; OpContext
+  OpKernelFn ..&gt; Tensor
+  KernelRegistry ..&gt; OpKernelFn : stores
+  KernelRegistry ..&gt; OpKind : key
+  KernelRegistry ..&gt; BackendType : key
+  KernelRegistry ..&gt; CpuKernelLevel : key
+  ResizeModule ..&gt; KernelRegistry : registers / finds
+  GaussianBlurModule ..&gt; KernelRegistry
+  LaplacianPyramidModule ..&gt; KernelRegistry
+  FourierModule ..&gt; KernelRegistry
+  WaveletModule ..&gt; KernelRegistry
+  ResizeModule ..&gt; Tensor : input / output
+  GaussianBlurModule ..&gt; Tensor
+  LaplacianPyramidModule ..&gt; Tensor
+  FourierModule ..&gt; Tensor
+  WaveletModule ..&gt; Tensor</code></pre>
+      <div class="article-nav"><span></span><a class="next" href="operator-config.html"><span class="lbl">下一篇</span>配置驱动算子对象</a>

@@ -1,0 +1,48 @@
+---
+layout: page
+title: "博客"
+description: "随笔、笔记与技术文章。"
+permalink: /blog/
+pagination:
+  enabled: true
+---
+
+<div class="page-head">
+  <div class="container">
+    <span class="eyebrow">Blog</span>
+    <h1>博客</h1>
+    <p>随笔、笔记与技术文章。与专栏的区别：专栏是成体系的连续文档，博客是单篇独立的内容。</p>
+  </div>
+</div>
+
+<section class="section" style="padding-top:6px">
+  <div class="container">
+    {% if site.posts.size == 0 %}
+      <div class="empty-state">
+        暂无博客文章。后续只需在 <code>_posts/</code> 下新增 Markdown 文件即可自动出现在这里。
+      </div>
+    {% else %}
+      <div class="posts-grid">
+        {% for post in site.posts %}
+          <a class="card reveal post-card" href="{{ post.url | relative_url }}">
+            <h3>{{ post.title }}</h3>
+            <p class="post-summary">
+              {% if post.excerpt %}{{ post.excerpt | strip_html | truncate: 120 }}{% else %}{{ post.content | strip_html | truncate: 120 }}{% endif %}
+            </p>
+            <div class="post-meta">
+              <span>{{ post.date | date: "%Y-%m-%d" }}</span>
+              {% if post.categories and post.categories.size > 0 %}
+                <span>· {{ post.categories | join: ' · ' }}</span>
+              {% endif %}
+            </div>
+            {% if post.tags and post.tags.size > 0 %}
+              <div class="post-tags">
+                {% for tag in post.tags limit:4 %}<span class="post-tag">#{{ tag }}</span>{% endfor %}
+              </div>
+            {% endif %}
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</section>

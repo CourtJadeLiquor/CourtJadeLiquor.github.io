@@ -1,0 +1,100 @@
+// ==========================================================================
+// 基础 Reset + 全局
+// ==========================================================================
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+html[data-theme] { color-scheme: light; }
+html[data-theme="dark"] { color-scheme: dark; }
+
+body {
+  margin: 0;
+  background-color: var(--body-bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 16px;
+  line-height: 1.75;
+  -webkit-font-smoothing: antialiased;
+  background-image: var(--body-image);
+  background-attachment: fixed;
+  transition: background-color 0.45s ease, color 0.45s ease;
+}
+
+::selection { background: var(--selection); }
+
+// 噪点纹理
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--noise-opacity);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+a { color: var(--jade-soft); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--jade); }
+
+.container {
+  width: min(100% - 64px, var(--maxw));
+  margin-inline: auto;
+  position: relative;
+  z-index: 1;
+}
+
+// 进度条
+.progress {
+  position: fixed; top: 0; left: 0; height: 2px; width: 0%;
+  background: linear-gradient(90deg, var(--jade-deep), var(--jade), var(--moon));
+  z-index: 60; transition: width 0.1s linear;
+}
+
+// 暗色模式下 Rouge 代码块覆盖
+.highlight {
+  background: var(--code-bg) !important;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  padding: 0;
+  overflow: hidden;
+}
+.highlight pre {
+  margin: 0;
+  padding: 18px 22px;
+  overflow: auto;
+  background: none !important;
+  font-size: 13.2px;
+  line-height: 1.72;
+  border-radius: 0;
+}
+.highlight code {
+  background: none !important;
+  color: var(--code-text);
+  font-family: var(--mono);
+  font-size: inherit;
+  padding: 0;
+  border: 0;
+}
+
+// Rouge token 覆盖（适配暗黑）
+.highlight .c, .highlight .c1, .highlight .cm, .highlight .cs { color: var(--muted); font-style: italic; }
+.highlight .k, .highlight .kd, .highlight .kn, .highlight .kp, .highlight .kt, .highlight .kw { color: var(--jade-soft); }
+.highlight .n, .highlight .na, .highlight .nb, .highlight .nc, .highlight .nd, .highlight .nf, .highlight .nn, .highlight .nt, .highlight .nv { color: var(--text); }
+.highlight .s, .highlight .s1, .highlight .s2, .highlight .sb, .highlight .sc, .highlight .sd, .highlight .se, .highlight .sh, .highlight .si, .highlight .sr, .highlight .ss, .highlight .sx { color: var(--moon); }
+.highlight .mi, .highlight .mf, .highlight .mh, .highlight .il { color: #f0c97b; }
+.highlight .o { color: var(--jade); }
+.highlight .p { color: var(--text-dim); }
+.highlight .err { color: var(--danger); }
+
+// 代码块复制按钮 (JS 注入)
+.copy-btn {
+  position: absolute; top: 10px; right: 10px;
+  font-family: var(--sans); font-size: 11px;
+  color: var(--muted); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; padding: 3px 9px; cursor: pointer;
+  opacity: 0; transition: opacity 0.2s, color 0.2s;
+  z-index: 2;
+}
+.highlight:hover .copy-btn, pre:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { color: var(--jade); }

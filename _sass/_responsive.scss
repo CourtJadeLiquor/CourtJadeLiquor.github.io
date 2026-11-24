@@ -1,0 +1,60 @@
+// ==========================================================================
+// 响应式断点
+// ==========================================================================
+
+@media (max-width: 1200px) {
+  .column-card .chapters { grid-template-columns: repeat(3, 1fr); }
+  .article-layout { grid-template-columns: minmax(0, 1fr) 240px; gap: 44px; }
+  .nav a { padding: 8px 10px; }
+  .brand-sub { letter-spacing: 0.18em; }
+}
+
+@media (max-width: 980px) {
+  .container { width: min(100% - 40px, var(--maxw)); }
+  .hero { padding: 56px 0 40px; min-height: 0; }
+  .hero-grid { grid-template-columns: 1fr; gap: 44px; }
+  .hero-portrait { order: -1; }
+  .hero-portrait img { width: 230px; }
+  .portrait-ring { inset: -16px; }
+  .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  .feature { grid-template-columns: 1fr; }
+  .feature-visual { border-left: 0; border-top: 1px solid var(--line); }
+  .article-layout { grid-template-columns: 1fr; gap: 0; }
+  .toc { display: none; }
+  .about-grid { grid-template-columns: 1fr; }
+  .about-card { position: static; }
+  .column-card .chapters { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 780px) {
+  .nav {
+    position: absolute; top: 70px; left: 0; right: 0; flex-direction: column; align-items: stretch;
+    background: var(--nav-mobile-bg); border-bottom: 1px solid var(--line); padding: 10px 18px;
+    display: none; z-index: 54;
+  }
+  .nav.open { display: flex; }
+  .nav a { padding: 12px 10px; border-radius: 10px; }
+  .nav-toggle { display: block; order: 3; }
+  .brand-sub { display: none; }
+}
+
+@media (max-width: 680px) {
+  .container { width: calc(100% - 32px); }
+  .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  .column-card .chapters { grid-template-columns: 1fr; }
+  .stats { gap: 26px; flex-wrap: wrap; }
+  .stat b { font-size: 24px; }
+  .article-nav { grid-template-columns: 1fr; }
+  .feature-body { padding: 30px 24px; }
+  .prose { font-size: 16px; }
+  .prose h2 { font-size: 23px; }
+  .prose table { display: block; }
+  .posts-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .cursor-aura, .portrait-ring { display: none !important; }
+  .reveal { opacity: 1; transform: none; transition: none; }
+  * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }
+}

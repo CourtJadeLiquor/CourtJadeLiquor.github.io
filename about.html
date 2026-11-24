@@ -1,30 +1,10 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>关于 · 宫廷玉液酒</title>
-<meta name="description" content="关于宫廷玉液酒（CourtJadeLiquor）个人技术博客。">
-<link rel="icon" href="assets/avatar.jpg">
-<script>(function(){try{var t=localStorage.getItem('cjl-theme');if(t==='dark'||t==='github'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();</script>
-<link rel="stylesheet" href="assets/style.css">
-</head>
-<body>
-<header class="site-header">
-  <div class="progress"></div>
-  <div class="container header-inner">
-    <a class="brand" href="index.html">
-      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="38" height="38">
-      <span class="brand-text">
-        <span class="brand-name">宫廷玉液酒</span>
-        <span class="brand-sub">CourtJadeLiquor</span>
-      </span>
-    </a>
-    <button class="nav-toggle" type="button" aria-label="展开导航">☰</button>
-    <nav class="nav"><a href="index.html">首页</a><a href="columns.html">专栏</a><a href="topics.html">专题</a><a href="about.html" class="active">关于</a></nav>
-  </div>
-</header>
-<main>
+---
+layout: page
+title: "关于"
+description: "关于宫廷玉液酒（CourtJadeLiquor）个人技术博客。"
+permalink: /about.html
+---
+
 <div class="page-head">
   <div class="container">
     <span class="eyebrow">About</span>
@@ -32,52 +12,42 @@
     <p>记录长期主义的技术笔记：只写自己真正跑过、读过、验证过的内容。</p>
   </div>
 </div>
+
 <section class="section" style="padding-top:8px">
   <div class="container about-grid">
     <div class="about-card reveal">
-      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像">
+      <img src="{{ '/assets/avatar.jpg' | relative_url }}" alt="宫廷玉液酒头像">
       <h3>宫廷玉液酒</h3>
       <p>CourtJadeLiquor</p>
       <ul class="info-list">
         <li><span>站点名称</span><span>宫廷玉液酒</span></li>
         <li><span>英文名</span><span>CourtJadeLiquor</span></li>
         <li><span>建站时间</span><span>2026</span></li>
-        <li><span>站点形态</span><span>静态博客</span></li>
+        <li><span>站点形态</span><span>Jekyll 纯静态博客</span></li>
       </ul>
     </div>
     <div class="about-body">
       <h2>写什么</h2>
-      <p>本站关注四类问题：系统级语言（C++ / Rust）的设计与性能、Python 与人工智能的工程落地、量化交易的策略研究与系统开发，以及高性能算子的实现细节。内容偏向“怎么做、为什么这样做”，而不是概念罗列。</p>
+      <p>本站关注四类问题：系统级语言（C++ / Rust）的设计与性能、Python 与人工智能的工程落地、量化交易的策略研究与系统开发，以及高性能算子的实现细节。内容偏向"怎么做、为什么这样做"，而不是概念罗列。</p>
+
       <h2>怎么组织</h2>
-      <p><strong>专题</strong>是长期方向，先给出写作计划，再逐步补全；<strong>专栏</strong>是成体系的连续阅读，把同一项目的全部文档按依赖顺序整理。首期专栏是 <a href="column-mycv.html">HPCPlatform 算子平台</a>，收录项目全部 12 篇技术文档。</p>
+      <p><strong>专题</strong>是长期方向，先给出写作计划，再逐步补全；<strong>专栏</strong>是成体系的连续阅读，把同一项目的全部文档按依赖顺序整理。首期专栏是 <a href="{{ '/column-hpcplatform.html' | relative_url }}">HPCPlatform 算子平台</a>，收录项目全部技术文档。</p>
+
       <h2>写作原则</h2>
       <ul>
-        <li><strong>显式优先</strong>：分清“当前行为”与“未来计划”，不把猜测写成结论。</li>
+        <li><strong>显式优先</strong>：分清"当前行为"与"未来计划"，不把猜测写成结论。</li>
         <li><strong>锚定代码</strong>：涉及实现时给出文件与位置，方便读者自行核实。</li>
         <li><strong>可复现</strong>：构建、测试与基准尽量给出可直接执行的命令。</li>
         <li><strong>承认取舍</strong>：每个设计选择都有代价，写清代价比只写优点更有用。</li>
       </ul>
+
       <h2>技术栈</h2>
-      <p>本站为纯静态站点，无后端依赖；排版使用原生 HTML / CSS / JavaScript，正文由项目 Markdown 文档统一渲染生成。</p>
+      <p>本站基于 Jekyll 构建，Markdown 写作 + Rouge 代码高亮 + SCSS 主题，无后端、无数据库，部署于 GitHub Pages。未来新增文章只需在 <code>_posts/</code> 或 <code>_articles/</code> 下添加 Markdown 文件即可。</p>
+
+      <h2>联系</h2>
+      <ul>
+        <li>GitHub：<a href="https://github.com/CourtJadeLiquor" target="_blank">@CourtJadeLiquor</a></li>
+      </ul>
     </div>
   </div>
 </section>
-</main>
-<footer class="site-footer">
-  <div class="container footer-inner">
-    <div class="footer-brand">
-      <img src="assets/avatar.jpg" alt="宫廷玉液酒头像" width="30" height="30">
-      <span>宫廷玉液酒 · CourtJadeLiquor</span>
-    </div>
-    <div class="footer-links">
-      <a href="columns.html">专栏</a>
-      <a href="topics.html">专题</a>
-      <a href="posts.html">博客</a><a href="about.html">关于</a>
-    </div>
-    <div class="footer-meta">系统 · 智能 · 策略 · 算子</div>
-  </div>
-</footer>
-<script src="assets/main.js"></script>
-<script src="assets/app.js"></script>
-</body>
-</html>

@@ -1,0 +1,138 @@
+// ==========================================================================
+// 宫廷玉液酒 · CourtJadeLiquor — SCSS 变量（暗黑主题为主）
+// ==========================================================================
+
+:root {
+  --radius: 16px;
+  --maxw: 1480px;
+  --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", Georgia, "Times New Roman", serif;
+  --sans: "Inter", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", "SFMono-Regular", "Cascadia Code", "Fira Code", Consolas, "Liberation Mono", monospace;
+
+  // ---- 暗黑主题（默认） ----
+  --ink: #07100d;
+  --ink-2: #0b1714;
+  --panel: #0d1c18;
+  --panel-2: #102420;
+  --line: rgba(120, 190, 165, 0.16);
+  --line-strong: rgba(120, 200, 172, 0.3);
+  --jade: #4fd1a5;
+  --jade-soft: #8fe3c5;
+  --jade-deep: #1f7a60;
+  --moon: #e8d9b2;
+  --text: #dbe8e2;
+  --text-dim: #a7bdb4;
+  --muted: #7f978d;
+  --prose-text: #cfded7;
+  --prose-head: #eaf3ee;
+  --prose-strong: #f0f7f3;
+  --code-bg: #06110e;
+  --code-text: #c7dcd3;
+  --inline-code-bg: rgba(79, 209, 165, 0.1);
+  --inline-code-text: #a8ecd3;
+  --header-bg: rgba(7, 16, 13, 0.74);
+  --body-bg: #07100d;
+  --body-image:
+    radial-gradient(900px 520px at 8% -10%, rgba(45, 150, 118, 0.22), transparent 60%),
+    radial-gradient(760px 420px at 96% 2%, rgba(232, 217, 178, 0.08), transparent 62%),
+    radial-gradient(1100px 700px at 50% 108%, rgba(23, 92, 75, 0.18), transparent 68%);
+  --card-bg: linear-gradient(160deg, rgba(18, 40, 34, 0.85), rgba(9, 20, 17, 0.92));
+  --card-glow: radial-gradient(420px 160px at 100% 0%, rgba(79, 209, 165, 0.14), transparent 70%);
+  --feature-bg: linear-gradient(150deg, rgba(20, 48, 40, 0.92), rgba(8, 20, 17, 0.96) 60%);
+  --feature-visual-bg:
+    radial-gradient(500px 300px at 100% 0%, rgba(232, 217, 178, 0.09), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(79, 209, 165, 0.045) 0 1px, transparent 1px 46px);
+  --mini-bg: rgba(10, 24, 20, 0.7);
+  --about-bg: rgba(12, 28, 24, 0.7);
+  --quote-bg: rgba(79, 209, 165, 0.05);
+  --quote-text: #b9cdc5;
+  --th-bg: rgba(79, 209, 165, 0.08);
+  --row-stripe: rgba(255, 255, 255, 0.015);
+  --btn-primary-bg: linear-gradient(120deg, #2f9d7c, #4fd1a5);
+  --btn-primary-text: #04231b;
+  --btn-primary-shadow: 0 10px 30px -12px rgba(79, 209, 165, 0.65);
+  --btn-primary-shadow-hover: 0 16px 34px -12px rgba(79, 209, 165, 0.8);
+  --btn-ghost-bg: rgba(255, 255, 255, 0.02);
+  --aura: rgba(79, 209, 165, 0.42);
+  --input-bg: rgba(6, 17, 14, 0.75);
+  --modal-bg: linear-gradient(160deg, rgba(16, 36, 31, 0.98), rgba(8, 20, 17, 0.99));
+  --shadow: 0 24px 50px -28px rgba(0, 0, 0, 0.95);
+  --shadow-soft: 0 18px 40px -26px rgba(0, 0, 0, 0.9);
+  --hero-grad: linear-gradient(115deg, #f3f7f2 18%, var(--jade-soft) 58%, var(--moon) 96%);
+  --portrait-shadow: 0 0 0 10px rgba(10, 26, 22, 0.9), 0 0 0 11px rgba(79, 209, 165, 0.16), 0 40px 90px -30px rgba(0, 0, 0, 0.9);
+  --noise-opacity: 0.035;
+  --selection: rgba(79, 209, 165, 0.28);
+  --focus-ring: rgba(79, 209, 165, 0.18);
+  --danger: #f2716a;
+  --danger-bg: rgba(242, 113, 106, 0.1);
+  --avatar-text: #04231b;
+  --aura-blend: screen;
+  --ripple: rgba(79, 209, 165, 0.65);
+  --nav-mobile-bg: rgba(7, 16, 13, 0.98);
+  --code-hl-bg: #0a1813;
+  --toc-active: var(--jade);
+}
+
+// ---- GitHub 浅色主题 ----
+html[data-theme="github"] {
+  --ink: #ffffff;
+  --ink-2: #f6f8fa;
+  --panel: #ffffff;
+  --panel-2: #f6f8fa;
+  --line: #d8dee4;
+  --line-strong: #afb8c1;
+  --jade: #0969da;
+  --jade-soft: #0969da;
+  --jade-deep: #0550ae;
+  --moon: #8250df;
+  --text: #1f2328;
+  --text-dim: #59636e;
+  --muted: #6e7781;
+  --prose-text: #24292f;
+  --prose-head: #1f2328;
+  --prose-strong: #1f2328;
+  --code-bg: #f6f8fa;
+  --code-text: #24292f;
+  --inline-code-bg: rgba(175, 184, 193, 0.2);
+  --inline-code-text: #cf222e;
+  --header-bg: rgba(255, 255, 255, 0.86);
+  --body-bg: #ffffff;
+  --body-image:
+    radial-gradient(900px 520px at 8% -10%, rgba(9, 105, 218, 0.07), transparent 60%),
+    radial-gradient(760px 420px at 96% 2%, rgba(130, 80, 223, 0.05), transparent 62%),
+    radial-gradient(1100px 700px at 50% 108%, rgba(31, 136, 61, 0.05), transparent 68%);
+  --card-bg: #ffffff;
+  --card-glow: radial-gradient(420px 160px at 100% 0%, rgba(9, 105, 218, 0.07), transparent 70%);
+  --feature-bg: linear-gradient(150deg, #f6f8fa, #ffffff 62%);
+  --feature-visual-bg:
+    radial-gradient(500px 300px at 100% 0%, rgba(130, 80, 223, 0.07), transparent 70%),
+    repeating-linear-gradient(90deg, rgba(9, 105, 218, 0.05) 0 1px, transparent 1px 46px);
+  --mini-bg: #f6f8fa;
+  --about-bg: #ffffff;
+  --quote-bg: #f6f8fa;
+  --quote-text: #59636e;
+  --th-bg: #f6f8fa;
+  --row-stripe: rgba(0, 0, 0, 0.015);
+  --btn-primary-bg: linear-gradient(120deg, #1f883d, #2da44e);
+  --btn-primary-text: #ffffff;
+  --btn-primary-shadow: 0 10px 24px -12px rgba(31, 136, 61, 0.5);
+  --btn-primary-shadow-hover: 0 16px 30px -12px rgba(31, 136, 61, 0.65);
+  --btn-ghost-bg: #f6f8fa;
+  --aura: rgba(9, 105, 218, 0.16);
+  --input-bg: #ffffff;
+  --modal-bg: #ffffff;
+  --shadow: 0 20px 48px -28px rgba(31, 35, 40, 0.3);
+  --shadow-soft: 0 14px 34px -24px rgba(31, 35, 40, 0.28);
+  --hero-grad: linear-gradient(115deg, #1f2328 18%, #0969da 58%, #8250df 96%);
+  --portrait-shadow: 0 0 0 10px #fff, 0 0 0 11px #d8dee4, 0 30px 70px -30px rgba(31, 35, 40, 0.35);
+  --noise-opacity: 0.012;
+  --selection: rgba(9, 105, 218, 0.18);
+  --focus-ring: rgba(9, 105, 218, 0.16);
+  --danger: #cf222e;
+  --danger-bg: rgba(207, 34, 46, 0.08);
+  --avatar-text: #ffffff;
+  --aura-blend: multiply;
+  --ripple: rgba(9, 105, 218, 0.45);
+  --nav-mobile-bg: rgba(255, 255, 255, 0.98);
+  --code-hl-bg: #f6f8fa;
+}

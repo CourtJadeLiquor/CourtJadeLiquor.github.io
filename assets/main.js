@@ -1,19 +1,23 @@
+// ==========================================================================
+// 宫廷玉液酒 · CourtJadeLiquor — 精简主脚本
+// 保留：导航折叠 / 阅读进度 / 代码复制 / 目录高亮 / reveal 动画 / 光标 aura
+// 移除：数据库调用 / API / 编辑器 / 评论动态加载 / spark / ripple
+// ==========================================================================
+
 (function () {
   'use strict';
 
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var finePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
 
-  /* ---------- mobile nav ---------- */
+  /* ---------- 移动端导航 ---------- */
   var toggle = document.querySelector('.nav-toggle');
   var nav = document.querySelector('.nav');
   if (toggle && nav) {
-    toggle.addEventListener('click', function () {
-      nav.classList.toggle('open');
-    });
+    toggle.addEventListener('click', function () { nav.classList.toggle('open'); });
   }
 
-  /* ---------- reading progress ---------- */
+  /* ---------- 阅读进度条 ---------- */
   var bar = document.querySelector('.progress');
   if (bar) {
     var updateProgress = function () {
@@ -26,15 +30,16 @@
     updateProgress();
   }
 
-  /* ---------- copy buttons on code blocks ---------- */
-  Array.prototype.forEach.call(document.querySelectorAll('.prose pre'), function (pre) {
+  /* ---------- 代码块复制按钮 ---------- */
+  var codeBlocks = document.querySelectorAll('.prose pre, .prose .highlight');
+  Array.prototype.forEach.call(codeBlocks, function (block) {
     var btn = document.createElement('button');
     btn.className = 'copy-btn';
     btn.type = 'button';
     btn.textContent = '复制';
     btn.addEventListener('click', function () {
-      var code = pre.querySelector('code');
-      var text = code ? code.innerText : pre.innerText;
+      var codeEl = block.querySelector('code');
+      var text = codeEl ? codeEl.innerText : block.innerText;
       var done = function () {
         btn.textContent = '已复制';
         setTimeout(function () { btn.textContent = '复制'; }, 1600);
@@ -43,18 +48,15 @@
         navigator.clipboard.writeText(text).then(done, done);
       } else {
         var ta = document.createElement('textarea');
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
+        ta.value = text; document.body.appendChild(ta); ta.select();
         try { document.execCommand('copy'); } catch (e) {}
-        document.body.removeChild(ta);
-        done();
+        document.body.removeChild(ta); done();
       }
     });
-    pre.appendChild(btn);
+    block.appendChild(btn);
   });
 
-  /* ---------- toc active state ---------- */
+  /* ---------- 目录（TOC）当前章节高亮 ---------- */
   var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a'));
   if (tocLinks.length && 'IntersectionObserver' in window) {
     var byId = {};
@@ -76,7 +78,7 @@
     heads.forEach(function (h) { io.observe(h); });
   }
 
-  /* ---------- reveal on scroll ---------- */
+  /* ---------- 滚动淡入 ---------- */
   var revealEls = document.querySelectorAll('.reveal');
   if (revealEls.length && 'IntersectionObserver' in window) {
     var ro = new IntersectionObserver(function (entries) {
@@ -95,17 +97,13 @@
     Array.prototype.forEach.call(revealEls, function (el) { el.classList.add('in'); });
   }
 
-  /* ---------- theme-aware cursor aura ---------- */
+  /* ---------- 光标 aura（精简版，无 spark/ripple） ---------- */
   if (!reduceMotion && finePointer) {
     var aura = document.createElement('div');
     aura.className = 'cursor-aura';
     document.body.appendChild(aura);
 
-    var targetX = -1200;
-    var targetY = -1200;
-    var curX = targetX;
-    var curY = targetY;
-
+    var targetX = -1200, targetY = -1200, curX = targetX, curY = targetY;
     var render = function () {
       curX += (targetX - curX) * 0.18;
       curY += (targetY - curY) * 0.18;
@@ -114,57 +112,13 @@
     };
     requestAnimationFrame(render);
 
-    var lastSpark = 0;
-    var lastX = 0;
-    var lastY = 0;
-
     document.addEventListener('pointermove', function (ev) {
-      targetX = ev.clientX;
-      targetY = ev.clientY;
+      targetX = ev.clientX; targetY = ev.clientY;
       aura.classList.add('visible');
-
-      var now = Date.now();
-      var dx = ev.clientX - lastX;
-      var dy = ev.clientY - lastY;
-      if (now - lastSpark > 48 && dx * dx + dy * dy > 90) {
-        lastSpark = now;
-        lastX = ev.clientX;
-        lastY = ev.clientY;
-        spawnSpark(ev.clientX, ev.clientY);
-      }
     }, { passive: true });
 
     document.addEventListener('pointerleave', function () {
       aura.classList.remove('visible');
     });
-
-    document.addEventListener('pointerdown', function (ev) {
-      spawnRipple(ev.clientX, ev.clientY);
-    }, { passive: true });
-  }
-
-  function spawnSpark(x, y) {
-    var spark = document.createElement('span');
-    spark.className = 'spark';
-    var offset = 10;
-    spark.style.left = (x + (Math.random() * offset - offset / 2)) + 'px';
-    spark.style.top = (y + (Math.random() * offset - offset / 2)) + 'px';
-    spark.style.opacity = '0.9';
-    document.body.appendChild(spark);
-    setTimeout(function () {
-      if (spark.parentNode) spark.parentNode.removeChild(spark);
-    }, 780);
-  }
-
-  function spawnRipple(x, y) {
-    if (reduceMotion) return;
-    var ripple = document.createElement('span');
-    ripple.className = 'click-ripple';
-    ripple.style.left = x + 'px';
-    ripple.style.top = y + 'px';
-    document.body.appendChild(ripple);
-    setTimeout(function () {
-      if (ripple.parentNode) ripple.parentNode.removeChild(ripple);
-    }, 700);
   }
 })();

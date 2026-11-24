@@ -1,0 +1,23 @@
+# ===== 系统 =====
+.DS_Store
+Thumbs.db
+
+# ===== Jekyll =====
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+
+# ===== Bundler =====
+.bundle/
+Gemfile.lock
+
+# ===== 编辑器 =====
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ===== 构建中间产物 =====
+*.bak
+*.tmp

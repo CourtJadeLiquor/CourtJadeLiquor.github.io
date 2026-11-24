@@ -1,0 +1,66 @@
+---
+layout: default
+---
+{% comment %}
+  专栏文章布局（HPCPlatform 等），布局与 post 一致，但面包屑不同。
+  front matter 需指定：collection, column, breadcrumbs
+{% endcomment %}
+
+<article>
+  <div class="article-head">
+    <div class="container">
+      <div class="crumbs">
+        {% if page.breadcrumbs %}
+          {% for crumb in page.breadcrumbs %}
+            {% if crumb.url %}<a href="{{ crumb.url | relative_url }}">{{ crumb.name }}</a><span class="sep">/</span>
+            {% else %}<span>{{ crumb.name }}</span>{% endif %}
+          {% endfor %}
+        {% else %}
+          <a href="{{ '/' | relative_url }}">首页</a><span class="sep">/</span>
+          <a href="{{ '/columns.html' | relative_url }}">专栏</a><span class="sep">/</span>
+          <span>{{ page.title }}</span>
+        {% endif %}
+      </div>
+      <h1>{{ page.title }}</h1>
+      <div class="article-meta">
+        {% if page.column %}<span>{{ page.column }}</span><span class="dot">·</span>{% endif %}
+        {% if page.chapter %}<span>{{ page.chapter }}</span><span class="dot">·</span>{% endif %}
+        <span>{{ page.date | date: "%Y-%m-%d" }}</span>
+      </div>
+      {% if page.tags and page.tags.size > 0 %}
+        <div class="post-tags">
+          {% for tag in page.tags %}<span class="post-tag">#{{ tag }}</span>{% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="container article-layout">
+    <div class="prose" id="proseContent">
+      {{ content }}
+    </div>
+    <aside class="toc" id="postToc" hidden>
+      <div class="toc-title">目录</div>
+    </aside>
+  </div>
+</article>
+
+<script>
+(function(){
+  var prose = document.getElementById('proseContent');
+  var toc = document.getElementById('postToc');
+  if (!prose || !toc) return;
+  var heads = prose.querySelectorAll('h2, h3');
+  if (heads.length < 2) { toc.hidden = true; return; }
+  toc.hidden = false;
+  heads.forEach(function(h, i){
+    var id = 'sec-' + (i+1);
+    h.id = id;
+    var a = document.createElement('a');
+    a.href = '#' + id;
+    a.textContent = h.textContent;
+    a.className = h.tagName === 'H3' ? 'lv3' : 'lv2';
+    toc.appendChild(a);
+  });
+})();
+</script>

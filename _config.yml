@@ -1,0 +1,87 @@
+#############################
+# 宫廷玉液酒 · CourtJadeLiquor
+# Jekyll 4.4 纯静态博客配置
+#############################
+
+# ---- 基础信息 ----
+title: "宫廷玉液酒 · CourtJadeLiquor"
+subtitle: "知至而道至 · 功成归极乐 · 吾亦坐莲台"
+description: >
+  个人技术博客：C++ / Rust 系统级语言、Python AI 工程落地、量化交易策略与系统、高性能算子开发。
+  只写真正跑过、读过、验证过的内容。
+author: "宫廷玉液酒"
+email: ""
+baseurl: ""           # GitHub Pages 项目页用 "/CourtJadeLiquor.github.io"，用户页留空
+url: "https://courtjadeliquor.github.io"
+lang: "zh-CN"
+
+# ---- 路径 ----
+permalink: /blog/:year/:month/:day/:slug/     # 博客文章 URL
+timezone: "Asia/Shanghai"
+
+# ---- Markdown / 代码高亮 ----
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+  hard_wrap: false
+
+# ---- 主题 ----
+defaults:
+  - scope:
+      path: ""
+      type: posts
+    values:
+      layout: post
+      permalink: /blog/:year/:month/:day/:slug/
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: page
+
+# ---- Collections ----
+collections:
+  articles:
+    output: true
+    permalink: /articles/:path/
+  topics:
+    output: true
+    permalink: /topics/:path/
+
+# ---- 插件 ----
+plugins:
+  - jekyll-sitemap
+  - jekyll-feed
+
+# ---- 过滤 ----
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - node_modules
+  - vendor
+  - .git
+  - .jekyll-cache
+  - _site
+  - .DS_Store
+  - _convert.py
+  - articles/
+  - column-mycv.html
+  - columns.html.bak
+  - topics.html.bak
+  - about.html.bak
+
+# ---- 导航 ----
+nav:
+  - title: 首页
+    url: /
+  - title: 专栏
+    url: /columns.html
+  - title: 专题
+    url: /topics.html
+  - title: 博客
+    url: /blog/
+  - title: 关于
+    url: /about.html

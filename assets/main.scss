@@ -1,0 +1,15 @@
+---
+# 这个 front matter 告诉 Jekyll：请用 Sass 处理器编译本文件，输出到 assets/main.css
+---
+
+// ==========================================================================
+// 宫廷玉液酒 · CourtJadeLiquor — 主入口 SCSS
+// 暗黑主题为主，浅色仅作 data-theme="github" 切换
+// ==========================================================================
+
+@import "variables";
+@import "base";
+@import "layout";
+@import "components";
+@import "prose";
+@import "responsive";
