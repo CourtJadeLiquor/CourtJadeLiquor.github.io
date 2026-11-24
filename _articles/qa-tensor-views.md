@@ -7,6 +7,7 @@ section: "问答与易错点"
 order: 5
 permalink: /articles/qa-tensor-views/
 tags: ["HPCPlatform", "Tensor", "stride"]
+topics: ["language", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"

@@ -7,6 +7,7 @@ section: "总览"
 order: 2
 permalink: /articles/operator-config/
 tags: ["HPCPlatform", "配置驱动", "Operator"]
+topics: ["architecture", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"

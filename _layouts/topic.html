@@ -1,0 +1,40 @@
+---
+layout: default
+---
+{% assign related_articles = site.articles | where_exp: 'article', 'article.topics contains page.topic_id' | sort: 'order' %}
+
+<div class="page-head">
+  <div class="container">
+    <span class="eyebrow">Topic</span>
+    <h1>{{ page.title }}</h1>
+    <p>{{ page.description }}</p>
+  </div>
+</div>
+
+<section class="section" style="padding-top:10px">
+  <div class="container prose">
+    {{ content }}
+  </div>
+</section>
+
+{% if related_articles.size > 0 %}
+  <section class="section" style="padding-top:0">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2>相关文章</h2>
+          <p>按专栏顺序排列</p>
+        </div>
+      </div>
+      <div class="card">
+        {% for article in related_articles %}
+          <a class="chapter-link" href="{{ article.url | relative_url }}">
+            <span class="num">{{ article.order | string_format: '%02d' }}</span>
+            <span>{{ article.title }}</span>
+            <span class="more">阅读 →</span>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endif %}

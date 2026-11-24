@@ -15,46 +15,36 @@ permalink: /columns.html
 
 <section class="section" style="padding-top:6px">
   <div class="container">
-    {% for col in site.columns %}
+    {% for col_entry in site.data.columns %}
+    {% assign col = col_entry[1] %}
+    {% assign articles = site.articles | where: 'column', col.key | sort: 'order' %}
     <div class="card column-card reveal" style="padding:34px">
-      <span class="chip">{{ col.articles | size }} 篇 · 已发布</span>
+      <span class="chip">{{ articles | size }} 篇 · 已发布</span>
       <h3 style="font-family:var(--serif);font-size:26px;margin:0 0 12px;letter-spacing:.04em">
         {{ col.title }}
       </h3>
       <p style="color:var(--text-dim);max-width:760px;margin:0">{{ col.description }}</p>
+      {% include topic-links.html topics=col.topics %}
+      {% include github-link.html url=col.github class="btn btn-ghost github-cta" text="GitHub · 查看源码" %}
 
-      {% if col.sections %}
-        {% for section in col.sections %}
-          <h3 style="font-family:var(--serif);font-size:16px;letter-spacing:.1em;margin:26px 0 8px;color:var(--jade-soft)">{{ section.name }}</h3>
+      {% for section_name in col.sections %}
+        {% assign section_articles = articles | where: 'section', section_name %}
+        {% if section_articles.size > 0 %}
+          <h3 style="font-family:var(--serif);font-size:16px;letter-spacing:.1em;margin:26px 0 8px;color:var(--jade-soft)">{{ section_name }}</h3>
           <div>
-            {% for art in col.articles %}
-              {% if art.section == section.name %}
-                <a class="chapter-link" href="{{ art.url | relative_url }}">
-                  <span class="num">{{ forloop.parentloop.index }}{{ forloop.index }}</span>
-                  <span>{{ art.title }}</span>
-                  <span class="more">阅读 →</span>
-                </a>
-              {% endif %}
+            {% for art in section_articles %}
+              <a class="chapter-link" href="{{ art.url | relative_url }}">
+                <span class="num">{{ art.order | string_format: '%02d' }}</span>
+                <span>{{ art.title }}</span>
+                <span class="more">阅读 →</span>
+              </a>
             {% endfor %}
           </div>
-        {% endfor %}
-      {% else %}
-        <div>
-          {% for art in col.articles %}
-            <a class="chapter-link" href="{{ art.url | relative_url }}">
-              <span class="num">{{ forloop.index | string_format: '%02d' }}</span>
-              <span>{{ art.title }}</span>
-              <span class="more">阅读 →</span>
-            </a>
-          {% endfor %}
-        </div>
-      {% endif %}
+        {% endif %}
+      {% endfor %}
 
       <div style="margin-top:30px;display:flex;gap:14px;flex-wrap:wrap">
         <a class="btn btn-primary" href="{{ col.url | relative_url }}">进入专栏 <span>→</span></a>
-        {% if col.github %}
-          <a class="btn btn-ghost" href="{{ col.github }}" target="_blank">GitHub</a>
-        {% endif %}
       </div>
     </div>
     {% endfor %}

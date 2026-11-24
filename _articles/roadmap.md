@@ -7,6 +7,7 @@ section: "版本演进"
 order: 12
 permalink: /articles/roadmap/
 tags: ["HPCPlatform", "Roadmap"]
+topics: ["architecture", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"

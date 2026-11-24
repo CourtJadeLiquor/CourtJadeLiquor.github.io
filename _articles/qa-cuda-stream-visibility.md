@@ -7,6 +7,7 @@ section: "问答与易错点"
 order: 9
 permalink: /articles/qa-cuda-stream-visibility/
 tags: ["HPCPlatform", "CUDA", "Stream"]
+topics: ["system", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"

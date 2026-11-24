@@ -6,7 +6,7 @@ permalink: /column-hpcplatform.html
 ---
 
 {% assign col = site.data.columns.hpcplatform %}
-{% assign articles = site.articles | sort: 'order' %}
+{% assign articles = site.articles | where: 'column', col.key | sort: 'order' %}
 
 <div class="page-head">
   <div class="container">
@@ -24,8 +24,10 @@ permalink: /column-hpcplatform.html
         HPCPlatform：从零搭建高性能算子平台
       </h3>
       <p style="color:var(--text-dim);max-width:760px;margin:0">{{ col.description | default: '' }}</p>
+      {% include topic-links.html topics=col.topics %}
+      {% include github-link.html url=col.github class="btn btn-ghost github-cta" text="GitHub · 查看源码" %}
 
-      {% assign sections = '总览|问答与易错点|版本演进' | split: '|' %}
+      {% assign sections = col.sections %}
       {% for section_name in sections %}
         {% assign section_articles = '' | split: '' %}
         {% for art in articles %}
@@ -47,12 +49,6 @@ permalink: /column-hpcplatform.html
         {% endif %}
       {% endfor %}
 
-      <div style="margin-top:30px;display:flex;gap:14px;flex-wrap:wrap">
-        {% if col.github %}
-          <a class="btn btn-ghost" href="{{ col.github }}" target="_blank">GitHub · hpcplatform</a>
-        {% endif %}
-        <a class="btn btn-ghost" href="{{ '/topics/operator-dev.html' | relative_url }}">相关专题：算子开发</a>
-      </div>
     </div>
   </div>
 </section>

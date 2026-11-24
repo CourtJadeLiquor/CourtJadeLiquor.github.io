@@ -7,6 +7,7 @@ section: "问答与易错点"
 order: 11
 permalink: /articles/qa-testing/
 tags: ["HPCPlatform", "构建", "测试"]
+topics: ["architecture", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"

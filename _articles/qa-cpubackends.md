@@ -7,6 +7,7 @@ section: "问答与易错点"
 order: 4
 permalink: /articles/qa-cpubackends/
 tags: ["HPCPlatform", "CPU", "内存"]
+topics: ["architecture", "system", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"

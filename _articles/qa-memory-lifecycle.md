@@ -7,6 +7,7 @@ section: "问答与易错点"
 order: 6
 permalink: /articles/qa-memory-lifecycle/
 tags: ["HPCPlatform", "内存管理"]
+topics: ["language", "system", "architecture"]
 breadcrumbs:
   - name: "首页"
     url: "/"

@@ -21,7 +21,7 @@ permalink: /
       </div>
       <div class="stats">
         <div class="stat"><b>{{ site.topics | size }}</b><span>技术专题</span></div>
-        <div class="stat"><b>{{ site.columns | size }}</b><span>开源专栏</span></div>
+        <div class="stat"><b>{{ site.data.columns | size }}</b><span>开源专栏</span></div>
         <div class="stat"><b>{{ site.articles | size }}</b><span>篇项目文档</span></div>
       </div>
     </div>
@@ -33,12 +33,12 @@ permalink: /
   </div>
 </section>
 
-<section class="section">
+<section class="section home-section">
   <div class="container">
     <div class="section-head">
       <div>
         <h2>技术专题</h2>
-        <p>长期方向：从语言运行时到交易系统与算子内核</p>
+        <p>五大主题：语言特性、系统编程、基础架构、机器学习、算子研究</p>
       </div>
       <a class="section-link" href="{{ '/topics.html' | relative_url }}">查看全部专题 →</a>
     </div>
@@ -58,7 +58,7 @@ permalink: /
   </div>
 </section>
 
-<section class="section">
+<section class="section home-section">
   <div class="container">
     <div class="section-head">
       <div>
@@ -67,31 +67,35 @@ permalink: /
       </div>
       <a class="section-link" href="{{ '/columns.html' | relative_url }}">专栏索引 →</a>
     </div>
-    {% for col in site.columns limit:1 %}
+    {% for col_entry in site.data.columns limit:1 %}
+    {% assign col = col_entry[1] %}
+    {% assign articles = site.articles | where: 'column', col.key | sort: 'order' %}
     <div class="feature">
       <div class="feature-body">
-        <span class="chip">{{ col.articles | size }} 篇 · 已发布</span>
+        <span class="chip">{{ articles | size }} 篇 · 已发布</span>
         <h3>{{ col.title }}</h3>
         <p>{{ col.description }}</p>
         <p>{{ col.subtitle }}</p>
+        {% include topic-links.html topics=col.topics %}
         <div class="hero-actions">
           <a class="btn btn-primary" href="{{ col.url | relative_url }}">开始阅读 <span>→</span></a>
-          {% if col.articles[0] %}
-            <a class="btn btn-ghost" href="{{ col.articles[0].url | relative_url }}">先看 {{ col.articles[0].title }}</a>
+          {% if articles[0] %}
+            <a class="btn btn-ghost" href="{{ articles[0].url | relative_url }}">先看 {{ articles[0].title }}</a>
           {% endif %}
+          {% include github-link.html url=col.github class="btn btn-ghost github-cta" text="查看源码" %}
         </div>
       </div>
       <div class="feature-visual">
-        {% for art in col.articles limit:6 %}
+        {% for art in articles limit:6 %}
           <a class="chapter-link" href="{{ art.url | relative_url }}">
             <span class="num">{{ forloop.index | string_format: '%02d' }}</span>
             <span>{{ art.title }}</span>
             <span class="more">阅读 →</span>
           </a>
         {% endfor %}
-        {% if col.articles.size > 6 %}
+        {% if articles.size > 6 %}
           <a class="chapter-link" href="{{ col.url | relative_url }}" style="border-bottom:0;color:var(--jade);font-size:12.5px;letter-spacing:.08em">
-            查看全部 {{ col.articles | size }} 篇 →
+            查看全部 {{ articles | size }} 篇 →
           </a>
         {% endif %}
       </div>

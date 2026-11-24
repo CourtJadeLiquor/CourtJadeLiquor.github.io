@@ -75,6 +75,11 @@
   overflow: hidden;
 }
 .prose pre { padding: 20px 22px; overflow: auto; }
+.prose .mermaid {
+  margin: 22px 0; padding: 20px; max-width: 100%; overflow-x: auto;
+  background: var(--code-bg); border: 1px solid var(--line); border-radius: 12px;
+}
+.prose .mermaid svg { display: block; max-width: 100%; height: auto; margin-inline: auto; }
 .prose .highlight pre { padding: 20px 22px; }
 .prose pre code { background: none; border: 0; padding: 0; color: var(--code-text); font-size: 13.2px; line-height: 1.72; }
 

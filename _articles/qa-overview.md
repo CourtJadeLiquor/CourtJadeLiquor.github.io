@@ -7,6 +7,7 @@ section: "问答与易错点"
 order: 3
 permalink: /articles/qa-overview/
 tags: ["HPCPlatform", "QA"]
+topics: ["architecture", "system", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"

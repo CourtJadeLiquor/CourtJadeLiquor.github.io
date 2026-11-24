@@ -6,7 +6,9 @@ column: "HPCPlatform"
 section: "总览"
 order: 1
 permalink: /articles/architecture/
+mermaid: true
 tags: ["HPCPlatform", "架构", "设计原则"]
+topics: ["architecture", "system", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"
@@ -208,7 +210,7 @@ src/ops/&lt;op&gt;/
 <table><thead><tr><th>模式</th><th>落点</th><th>作用</th></tr></thead><tbody><tr><td>Strategy</td><td>每算子多版本内核 + <code>CpuKernelLevel</code></td><td>同一语义的不同实现可替换</td></tr><tr><td>Factory</td><td><code>CreateBackend</code></td><td>屏蔽后端构造细节</td></tr><tr><td>Registry</td><td><code>op_registry.{h,cpp}</code></td><td>三元组到内核函数的延迟绑定</td></tr><tr><td>描述符注册表</td><td><code>op_descriptor.{h,cpp}</code>、<code>register_descriptors.cpp</code></td><td>配置名到算子对象构造器的延迟绑定，与内核注册表分层</td></tr><tr><td>Facade</td><td><code>Context</code></td><td>对调用者隐藏后端与内存管理</td></tr><tr><td>Adapter</td><td><code>interop/opencv.h</code>、<code>opencv_tensor_access</code></td><td>外部 <code>cv::Mat</code> 与 <code>Tensor</code> 互操作</td></tr><tr><td>Template Method</td><td><code>&lt;op&gt;_cpu.h</code> 共享骨架</td><td>固定遍历/边界/累加骨架，版本只填热点</td></tr><tr><td>RAII</td><td><code>Buffer</code>、<code>Result</code>、<code>Stream</code></td><td>资源与错误生命周期自动收敛</td></tr><tr><td>编译期多态</td><td><code>hpcplatform_WITH_*</code> / <code>hpcplatform_ENABLE_*</code></td><td>零运行时开销的可选能力</td></tr></tbody></table>
 <hr>
 <h2>12. UML 类图</h2>
-<p>类图使用 Mermaid <code>classDiagram</code>（Markdown 原生渲染，无需额外运行时）。按模块拆分为三张图，避免单图过大。</p>
+<p>类图使用 Mermaid <code>classDiagram</code> 浏览器渲染，按模块拆分为三张图，避免单图过大。</p>
 <h3>12.1 core 数据模型</h3>
 <pre><code class="language-mermaid">classDiagram
   direction LR

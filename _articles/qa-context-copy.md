@@ -7,6 +7,7 @@ section: "问答与易错点"
 order: 8
 permalink: /articles/qa-context-copy/
 tags: ["HPCPlatform", "Context", "Copy"]
+topics: ["system", "architecture", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"

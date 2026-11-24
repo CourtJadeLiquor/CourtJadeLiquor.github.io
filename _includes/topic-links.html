@@ -1,0 +1,12 @@
+{% if include.topics and include.topics.size > 0 %}
+  <div class="post-tags" aria-label="所属专题">
+    {% for topic_id in include.topics %}
+      {% assign topic = site.topics | where: 'topic_id', topic_id | first %}
+      {% if topic %}
+        <a class="post-tag" href="{{ topic.url | relative_url }}">{{ topic.title }}</a>
+      {% else %}
+        <span class="post-tag">{{ topic_id }}</span>
+      {% endif %}
+    {% endfor %}
+  </div>
+{% endif %}

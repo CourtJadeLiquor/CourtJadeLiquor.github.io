@@ -7,6 +7,7 @@ section: "问答与易错点"
 order: 10
 permalink: /articles/qa-error-model/
 tags: ["HPCPlatform", "Status", "Result"]
+topics: ["language", "architecture"]
 breadcrumbs:
   - name: "首页"
     url: "/"

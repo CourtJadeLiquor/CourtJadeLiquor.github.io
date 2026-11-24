@@ -13,6 +13,7 @@ author: "宫廷玉液酒"
 email: ""
 baseurl: ""           # GitHub Pages 项目页用 "/CourtJadeLiquor.github.io"，用户页留空
 url: "https://courtjadeliquor.github.io"
+github_url: "https://github.com/CourtJadeLiquor"
 lang: "zh-CN"
 
 # ---- 路径 ----
@@ -40,6 +41,11 @@ defaults:
       type: pages
     values:
       layout: page
+  - scope:
+      path: ""
+      type: topics
+    values:
+      layout: topic
 
 # ---- Collections ----
 collections:

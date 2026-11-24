@@ -14,5 +14,6 @@
         <a href="{{ item.url | relative_url }}"{% if page.url == item.url %} class="active"{% endif %}>{{ item.title }}</a>
       {% endfor %}
     </nav>
+    {% include github-link.html url=site.github_url class="github-link" label="GitHub 个人主页" %}
   </div>
 </header>

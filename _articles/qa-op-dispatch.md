@@ -7,6 +7,7 @@ section: "问答与易错点"
 order: 7
 permalink: /articles/qa-op-dispatch/
 tags: ["HPCPlatform", "注册表", "错误码"]
+topics: ["architecture", "operator"]
 breadcrumbs:
   - name: "首页"
     url: "/"
