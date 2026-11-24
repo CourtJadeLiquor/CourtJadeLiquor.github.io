@@ -10,7 +10,6 @@ _site/
 
 # ===== Bundler =====
 .bundle/
-Gemfile.lock
 
 # ===== 编辑器 =====
 .idea/

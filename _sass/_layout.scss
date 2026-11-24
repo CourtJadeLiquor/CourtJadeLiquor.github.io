@@ -47,8 +47,9 @@
 .footer-links { display: flex; gap: 18px; font-size: 13px; }
 
 // ---- Hero ----
-.hero { padding: 88px 0 64px; min-height: calc(100vh - 70px); display: flex; align-items: center; }
-.hero-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 72px; align-items: center; width: 100%; }
+.hero { padding: 88px 0 64px; min-height: calc(100vh - 70px); display: flex; align-items: center; overflow-x: clip; }
+.hero-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 72px; align-items: center; }
+.hero-grid > * { min-width: 0; }
 
 .eyebrow {
   display: inline-flex; align-items: center; gap: 10px;
@@ -80,7 +81,7 @@
   filter: blur(34px);
 }
 .hero-portrait img {
-  position: relative; width: min(400px, 78vw); aspect-ratio: 1; border-radius: 50%;
+  position: relative; width: min(400px, 100%); aspect-ratio: 1; border-radius: 50%;
   object-fit: cover; object-position: 50% 20%;
   border: 1px solid var(--line-strong);
   box-shadow: var(--portrait-shadow);
@@ -106,12 +107,13 @@
 .section-link { font-size: 13.5px; color: var(--jade); white-space: nowrap; }
 
 .grid { display: grid; gap: 22px; }
-.grid-3 { grid-template-columns: repeat(3, 1fr); }
-.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.grid > * { min-width: 0; }
 
 // ---- Feature 特色专栏 ----
 .feature {
-  display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 0; border-radius: 22px; overflow: hidden;
+  display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 0; border-radius: 22px; overflow: hidden;
   border: 1px solid var(--line-strong);
   background: var(--feature-bg);
 }

@@ -1,43 +1,33 @@
-name: Build and Deploy Jekyll site to Pages
-
-# =========================================================================
-# 官方 GitHub Pages + Jekyll 4 工作流
-# 关键：告诉 Pages "请用 Actions 产物部署"，而不是用内置 github-pages gem（3.9.x，已冻结）
-# =========================================================================
+name: Build and Deploy Jekyll site
 
 on:
   push:
-    branches: [main]
+    branches: [mysite]
   workflow_dispatch:
 
-# 最小权限：只够 Pages 部署
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
-# 避免并发：同一分支同时只跑一个
 concurrency:
   group: pages
   cancel-in-progress: true
 
 jobs:
-  # ---- 构建 ----
   build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Ruby
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: "3.3"
-          bundler-cache: true   # 自动 bundle install，结果缓存
+          bundler-cache: true
 
       - name: Setup Pages
         id: pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: Build with Jekyll
         run: |
@@ -46,16 +36,18 @@ jobs:
             --destination "${{ steps.pages.outputs.site_path }}"
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
 
-  # ---- 部署 ----
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

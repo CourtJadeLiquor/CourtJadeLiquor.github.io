@@ -45,7 +45,7 @@ ctest --test-dir build_debug -N                      # 只列出用例</code></p
 #include "hpcplatform/hpcplatform.h"
 
 namespace {
-
+  
 using namespace hpcplatform;
 
 TEST(hpcplatform, ShapeRankAndNumel) {
