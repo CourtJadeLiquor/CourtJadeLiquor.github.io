@@ -4,49 +4,159 @@ title: "Context::Copy 语义"
 date: 2026-11-08
 column: "HPCPlatform"
 section: "问答与易错点"
-order: 8
+order: 18
 permalink: /articles/qa-context-copy/
 tags: ["HPCPlatform", "Context", "Copy"]
-topics: ["system", "architecture", "operator"]
-breadcrumbs:
-  - name: "首页"
-    url: "/"
-  - name: "专栏"
-    url: "/columns.html"
-  - name: "HPCPlatform"
-    url: "/column-hpcplatform.html"
-  - name: "问答与易错点"
 ---
 
-<blockquote><p>相关代码：<code>src/core/copy.cpp</code>、<code>include/hpcplatform/core/context.h</code>、<code>src/core/backend.h</code></p><p>易混点：Copy 到底拷了什么、跨后端怎么决定谁来拷、拷完能不能立刻用。</p></blockquote>
-<hr>
-<h2>1. Copy 拷贝的是【逻辑元素】，不是裸字节</h2>
-<p><code>Context::Copy(dst, src)</code> 的契约是：把 <code>src</code> 的<strong>逻辑元素</strong>搬到 <code>dst</code>（<span class="code-link" title="仓库路径">context.h</span> 注释："Copies logical elements, including non-contiguous views"）。</p>
-<p>这意味着：</p>
-<ul><li><code>src</code> 可以是<strong>非连续视图</strong>（<code>Slice</code> 后的张量）——Copy 会按 <code>src</code> 的 stride 逐元素读，按 <code>dst</code> 的 stride 逐元素写，而不是粗暴 <code>memcpy</code> 整块。</li><li>要求 <code>dst</code> 与 <code>src</code> 的 shape / dtype / 元素数匹配；不匹配返回错误。</li><li>连续 host↔host 才会走快速 <code>memcpy</code>；其他情况逐元素搬运。</li></ul>
-<blockquote><p>所以"把一个 slice 视图拷到新张量"是安全的，结果就是视图看到的那些元素，不会把 stride 间隙里的垃圾也带过去。</p></blockquote>
-<hr>
-<h2>2. 谁来执行拷贝：由【目标上下文】选路</h2>
-<p><code>dst</code> 属于哪个 Context，就由那个 Context 的后端决定拷贝路径：</p>
-<table><thead><tr><th>src \ dst</th><th>host (native/opencv)</th><th>device (cuda)</th></tr></thead><tbody><tr><td>host</td><td>直接 memcpy / 逐元素</td><td>H2D：目标后端的 <code>CopyBuffer</code>（CUDA 用 <code>cudaMemcpyAsync</code>）</td></tr><tr><td>device</td><td>D2H：源后端的 <code>CopyBuffer</code></td><td>D2D：同设备内拷贝</td></tr></tbody></table>
-<p>后端的 <code>Backend::CopyBuffer</code>（<span class="code-link" title="仓库路径">backend.h</span>）有一条硬规则：</p>
-<blockquote><p>实现碰不到某类内存时，<strong>必须返回 <code>kUnsupported</code>，而不是在调用方背后经 host staging</strong>。</p></blockquote>
-<p>含义：如果一个新后端不会做 D2H，它应该老实返回 <code>kUnsupported</code>，让调用方知道，而不是偷偷先拷到 host 再拷到 device（那样会引入隐藏拷贝、破坏性能预期）。新增后端只需正确实现 <code>CopyBuffer</code>，就能参与 <code>Context::Copy</code> 的选路。</p>
-<p><strong>跨不同 GPU（peer-to-peer）</strong>：当前明确返回 <code>kUnsupported</code>，不经 host 中转。需要的话调用方自己显式分两段拷。</p>
-<hr>
-<h2>3. 同步契约：Copy 返回即完成</h2>
-<p><code>Context::Copy</code> 在返回前<strong>同步完成</strong>：</p>
-<ul><li>CUDA 路径会 <code>cudaStreamSynchronize</code>，所以返回后 <code>dst</code> 的数据已经在目标内存里、立即可读；</li><li>CPU 路径本身同步。</li></ul>
-<p>这是当前的公开契约。好处是生命周期简单：Copy 返回后你可以立即读 <code>dst</code>、可以立即让 <code>src</code> 析构。代价是 host 侧不能重叠 Copy 与计算（无异步流水）。若未来加异步 Copy，会是<strong>新的显式入口</strong>，不会偷偷改掉现有 <code>Copy</code> 的语义（<a href="architecture.html">架构设计</a> §1"显式优先于隐式"）。</p>
-<hr>
-<h2>4. 常见误用</h2>
-<table><thead><tr><th>误用</th><th>后果</th><th>正确做法</th></tr></thead><tbody><tr><td>跨设备 Copy 却不传目标 Context（在源 Context 上拷）</td><td>路径选错 / 报错</td><td>在 <code>dst</code> 所在的 Context 上调用 <code>Copy(&amp;dst, src)</code></td></tr><tr><td>期望 Copy 自动处理 dtype 转换</td><td>不转换，dtype 不符报错</td><td>先 <code>Cast</code> 再 Copy，或用算子输出直接是目标 dtype</td></tr><tr><td>期望 Copy 自动处理 layout（NCHW↔NHWC）</td><td>不转换</td><td>显式 <code>Transpose</code> / <code>Permute</code></td></tr><tr><td>Copy 后立刻在另一条流上用 <code>dst</code> 但没同步</td><td>（当前 Copy 已同步，无碍；但若是自己写的异步路径则可能读到旧值）</td><td>遵循"返回即完成"的公开契约</td></tr></tbody></table>
-<hr>
-<h2>5. 与 <code>Clone</code> 的关系</h2>
-<p><code>Tensor::Clone()</code> 内部就是"在 owning backend 上分配新张量 + <code>CopyTensorData</code>"（<span class="code-link" title="仓库路径">tensor.cpp</span>）。区别：</p>
-<ul><li><code>Clone()</code>：自动找归属后端（Context 死了会建临时后端兜底），总是深拷贝到同后端。</li><li><code>Context::Copy</code>：你指定目标 Context，可跨后端。</li></ul>
-<blockquote><p>记忆点：<strong>同后端深拷贝用 <code>Clone</code>，跨后端/跨设备搬运用 <code>Context::Copy</code>。</strong></p></blockquote>
-<hr>
-<h2>6. 一句话总结</h2>
-<blockquote><p>Copy 搬的是逻辑元素（非连续也正确），路由由目标 Context 的后端决定，碰不到的内存返回 <code>kUnsupported</code> 不偷转；返回前同步，立即可读。dtype/layout 不自动转，要转自己显式调算子。</p></blockquote>
-      <div class="article-nav"><a href="qa-op-dispatch.html"><span class="lbl">上一篇</span>算子分发与错误码</a><a class="next" href="qa-cuda-stream-visibility.html"><span class="lbl">下一篇</span>CUDA 流与可见性</a>
+> 相关代码：[transfer.h](../../include/hpcplatform/core/transfer.h)、[copy.cpp](../../src/core/copy.cpp)、[conversion.h](../../include/hpcplatform/interop/conversion.h)、[opencv_convert.cpp](../../src/backends/opencv/opencv_convert.cpp)
+> 配套样例：[samples/07_data_transfer.cpp](../../samples/07_data_transfer.cpp)（每一步都打印用了哪个入口）、[03](../../samples/03_opencv_backend.cpp)、[04](../../samples/04_cuda_pipeline.cpp)、[06](../../samples/06_image_cuda_pipeline.cpp)
+
+---
+
+## 0. 四层结构：只有一个实现，上面是两种"说法"
+
+```
+L3 适配层   Tensor::From<T>(外部对象, ctx)     第三方类型 -> Tensor，内含 staging
+            Tensor::Into<T>(tensor)            Tensor -> 第三方类型，内含 staging
+L2 语义层   Upload(host_src, &device_dst)      方向已知时的自文档化入口
+            Download(device_src, &host_dst)    = Copy + 两个内存域断言
+L2 原语层   Copy(src, &dst)                    唯一的搬运实现：任意方向、按 stride 搬逻辑元素
+L1 内部     CopyTensorData(backend, dst, src)  只做校验 + 执行者选路 + 连续/非连续分发，不对外
+L0 字节层   Backend::CopyBuffer(连续字节区间)   每后端实现；碰不到的内存返回 kUnsupported
+            Backend::CopyStrided(任意 stride)   每后端决策搬运策略；CUDA 单 kernel launch，host 逐元素循环
+
+（另：View / Slice / Permute / Reshape 只改元数据，不搬运任何字节——它们不是搬运 API。）
+```
+
+关键事实：**`Upload` 和 `Download` 不实现任何新能力**，它们只是给 `Copy` 加上"源必须是 host / 目标必须是 device"这类断言。所以不存在"用哪个更快"的问题，只存在"用哪个更能表达意图"的问题。
+
+---
+
+## 1. 唯一的选择规则：方向在调用点是否已知
+
+| 场景 | 入口 | 理由 |
+| --- | --- | --- |
+| 第三方类型 ↔ Tensor（cv::Mat 等） | `From` / `Into` | 适配器自己负责 H2D/D2H，调用方不写传输代码 |
+| 显式 H2D，目标已预分配 | `Upload` | 方向固定，断言能在早期抓住"忘了分配 device 张量"这类错误 |
+| 显式 D2H，目标已预分配 | `Download` | 同上 |
+| host ↔ host（可跨后端） | `Copy` | 没有方向可言 |
+| device ↔ device（同一设备） | `Copy` | 没有方向可言 |
+| 方向由数据决定（流水线、模板代码） | `Copy` | 传 device 张量就是 H2D，传 host 就是 host 拷贝，无需分支 |
+| 同后端深拷贝一份 | `Tensor::Clone()` | 连目标分配都省了，等价于"分配 + Copy" |
+
+一句话：**方向已知就写方向（Upload/Download），方向未知就用 Copy；拿到的是外部类型就用 From/Into。**
+
+---
+
+## 2. 角色分工
+
+### 2.1 使用者（写业务流程）
+
+```cpp
+// 推荐：外部数据进来，适配器负责上卡
+auto device = Tensor::From(image, *cuda);        // cv::Mat -> device 张量
+auto result = Resize(ops, device.value(), h, w); // 算子全程在 GPU
+auto out = Tensor::Into<cv::Mat>(result.value());// 自动 D2H
+
+// 已有 host 张量、要显式上卡
+auto device_tensor = Tensor::Empty(*cuda, host.shape(), host.dtype()).value();
+hpcplatform_RETURN_IF_ERROR(Upload(host, &device_tensor));
+
+// 方向不固定的通用工具函数
+hpcplatform_RETURN_IF_ERROR(Copy(src, dst));      // 传什么域就搬什么域
+```
+
+职责边界：**由使用者决定数据放在哪个域**（选 CPU Context 还是 CUDA Context，选 `From(mat, *cpu)` 还是 `From(mat, *cuda)`）。
+
+### 2.2 算子开发者（实现 `Resize` / `GaussianBlur` 这类算子）
+
+**算子内部不调用 `Copy` / `Upload` / `Download`。**
+
+- 输入张量在进入算子前已经在执行后端的内存域内（调用方用 `From` 或 `Upload` 放好）；算子直接读 `Data<T>()` 或交给 kernel。
+- 输出用 `AllocateOutput(context, shape, dtype)`（内部就是 `Tensor::Empty`）分配，kernel 直接写入，不需要"先算到临时区再拷出来"。
+- 需要把非连续视图落地时用 `Tensor::Clone()`，而不是自己拼 `Copy`。
+- 需要跨界（例如 CPU 算子想读 GPU 输入）是**设计错误**，应该在调用方解决，不要在算子里偷搬。
+
+判据：如果算子里出现了 `Upload` / `Download`，说明域的选择漏到了算子层，这是分层错误。
+
+### 2.3 后端开发者（新增 CUDA / NPU / 新加速器）
+
+只需正确实现 `Backend::CopyBuffer(dst_buffer, dst_offset, src_buffer, src_offset, bytes, stream)`（连续区间）；非连续拷贝由 `Backend::CopyStrided(dst, dst_strides, src, src_strides, shape, element_size, stream)` 承接，host 后端可直接继承默认的逐元素循环实现：
+
+- 支持的方向自己实现；碰不到的内存（例如纯 host 后端遇到 device 源、CUDA 遇到跨设备源）**必须返回 `kUnsupported`**，禁止在内部用 host 中转"帮忙"——那会引入隐藏拷贝，破坏性能预期。
+- `Copy` / `Upload` / `Download` / `From` / `Into` 会自动复用你的实现，不需要为上层的每种入口各写一份。
+- 能否拷贝（可达性）、怎么拷贝（策略）都由后端决策；上层 `CopyTensorData` 只做校验和路由，不做任何能力判断。
+- 跨设备（peer-to-peer）当前明确 `kUnsupported`，调用方需要时自己分两段拷。
+
+---
+
+## 3. 契约细节
+
+### 3.1 统一签名
+
+三个函数的参数顺序一致：**源在前、目标在后，目标用指针写出**。
+
+```cpp
+Copy(const Tensor& src,     Tensor* dst,     Stream* stream = nullptr);
+Upload(const Tensor& host_src, Tensor* device_dst, Stream* stream = nullptr);
+Download(const Tensor& device_src, Tensor* host_dst, Stream* stream = nullptr);
+```
+
+配套项目编码规范：不可变参数在前并带 `const`，可变输出在后。
+
+### 3.2 执行者由张量所有权推断
+
+调用方**永远不需要**传 Context：
+
+- `Copy` / `Upload` / `Download`：由**目标**张量的 owning backend 驱动；若源是 device 张量，则由源所在设备后端执行（D2H）。
+- `From`：由传入的 Context 决定目标域。
+- `Into`：由张量自身所在的域决定。
+
+因此"用错 Context"这类错误在类型层面就不存在。
+
+### 3.3 同步契约：返回即可用
+
+三者返回前**同步完成**（CUDA 路径内部 `cudaMemcpyAsync` + `cudaStreamSynchronize`）：
+
+- 返回后 `dst` 立即可读，`src` 可以立即析构；
+- 代价是没有异步流水；未来若加异步，会是一个**新的显式入口**，不会悄悄改变现有语义。
+
+### 3.4 搬的是逻辑元素，不是裸字节
+
+- 源可以是 `Slice` / `Permute` 后的非连续视图：按源 stride 逐元素读、按目标 stride 逐元素写，空隙里的垃圾不会被带过去。
+- 要求 shape / dtype / 元素数一致；**不做 dtype 转换、不做 layout 转换**（NCHW↔NHWC 需要显式 `Permute` + `Clone`）。
+- 连续 host↔host 走单次 `memcpy`；连续 host↔device 走单次 `CopyBuffer`。
+- 非连续视图交给 `Backend::CopyStrided`：CUDA 后端单次 strided-copy kernel launch（任意 stride、任意 rank，无逐元素传输）；host 后端继承默认的逐元素循环。stride 感知是后端能力，上层不做策略决策。
+
+---
+
+## 4. 设计自评
+
+| 维度 | 结论 |
+| --- | --- |
+| 分层 | 清晰：字节层 / 张量层 / 语义层 / 适配层各司其职，上层只加约束不加机制 |
+| 是否有两个真源 | 否：`Copy` 是唯一实现，`Upload`/`Download` 是纯断言包装 |
+| 心智模型 | 单一轴：**方向是否已知**。已知写方向，未知用 Copy，外部类型用适配器 |
+| 参数一致性 | 三个函数统一 `(源, 目标指针)`，与项目"输出参数在后"规范一致 |
+| 可扩展性 | 新后端实现 `CopyBuffer` + `CopyStrided`（host 后端可直接继承默认逐元素实现）；新第三方类型只加 `TensorConvert<T>` 特化，都不改传输 API |
+| 已知取舍 | 全部同步，无异步流水；跨设备 P2P 未实现（后端显式 `kUnsupported`，不偷偷经 host）；非连续拷贝的策略由各后端自选（CUDA 单 kernel，host 逐元素循环） |
+
+---
+
+## 5. 常见误用
+
+| 误用 | 后果 | 正确做法 |
+| --- | --- | --- |
+| 在算子里调用 `Upload` / `Download` | 域选择漏到算子层，算子被绑死在特定部署形态 | 由调用方决定域，算子里用 `Clone` 落地视图 |
+| 期望 `Copy` 自动转换 dtype | 直接报错（类型不匹配） | 输出张量分配成目标 dtype，或先走 dtype 转换算子 |
+| 期望 `Copy` 自动换 layout | 不换 | `Permute` 后用 `Clone` 落地 |
+| 对非连续 device 张量直接 `Copy` / `Into` | 正常支持：CUDA 单 kernel launch 完成，无需先落地 | 仅跨设备 P2P 会 `kUnsupported`，需分两段拷 |
+| 手工 host 中转做 D2D | 双倍流量 + 隐藏延迟 | 直接用 `Copy(device_src, &device_dst)` |
+| 传 `nullptr` 目标 | 返回 `kInvalidArgument` | 先 `Tensor::Empty` |
+
+---
+
+## 6. 一句话总结
+
+> 字节层只有 `CopyBuffer`（连续）和 `CopyStrided`（任意 stride），张量层只有 `Copy`；`Upload`/`Download` 是带方向断言的 `Copy`，`From`/`Into` 是把 staging 包起来的类型适配器。选型只有一个问题——方向是否已知——而算子内部永远不做搬运。

@@ -4,33 +4,52 @@ title: "CPU 内存与后端分层"
 date: 2026-11-04
 column: "HPCPlatform"
 section: "问答与易错点"
-order: 4
+order: 14
 permalink: /articles/qa-cpubackends/
 tags: ["HPCPlatform", "CPU", "内存"]
-topics: ["architecture", "system", "operator"]
-breadcrumbs:
-  - name: "首页"
-    url: "/"
-  - name: "专栏"
-    url: "/columns.html"
-  - name: "HPCPlatform"
-    url: "/column-hpcplatform.html"
-  - name: "问答与易错点"
 ---
 
-<p>cpu后端设计</p>
-<p>Buffer 负责"所有权"，CpuMemoryManager 负责"分配策略"，CpuAllocatorState 负责"两者的生命周期解耦"。</p>
-<table><thead><tr><th>层</th><th>职责</th><th>关键代码</th></tr></thead><tbody><tr><td>Buffer</td><td>谁在什么时候释放</td><td>\~Buffer 调 deleter</td></tr><tr><td>CpuMemoryManager</td><td>怎么分配：对齐、统计、复用</td><td>Allocate</td></tr><tr><td>CpuAllocatorState</td><td>管理器先死、Tensor 还活着时谁兜底</td><td>shared\_ptr 捕获</td></tr></tbody></table>
-<p>&lt;br /&gt;</p>
-<h2>为什么不能只用 RAII（比如 std::unique\_ptr\&lt;float\[]&gt;）</h2>
-<ol><li>对齐。 算子内核按 64 字节对齐做向量化假设，默认<code>alignment=64</code> 。<code>new</code> /<code>malloc</code> /<code>std::vector</code> 只保证<code>alignof(max_align_t)</code> ，通常 16 字节。所以必须走<code>posix_memalign</code> ，这已经超出标准容器的能力边界。</li><li>无异常错误模型。<code>new</code> 失败抛<code>std::bad_alloc</code> ，而本库明确要保持<code>-fno-exceptions</code> 可用（ error.h 的注释写了这个动机）。<code>Allocate</code> 返回<code>Result&lt;shared_ptr&lt;Buffer&gt;&gt;</code> ，失败是<code>Status::OutOfMemory</code> 。<code>std::unique_ptr</code> +<code>new</code> 在这个约束下直接不可用。</li><li>统计。<code>MemoryStats</code> 要给出<code>allocated_bytes / peak_bytes / allocation_count</code> ，其中峰值必须是 跨所有分配聚合 的。单个 RAII 对象只能知道自己那一份，没有共享计数器就无法算峰值。峰值用 CAS 循环维护，这天然要求一个共享状态。</li><li>复用（这是引入空闲块池的直接动机）。 算子每次调用都新分配输出，一个 5 级链路的基准跑 20 轮就是上百次 alloc/free。空闲块按 精确字节数 留在池里，下一轮直接命中，上一轮实测<code>cache_reuse=yes</code> 就是靠这个。纯 RAII 的<code>unique_ptr</code> 语义是"析构即归还"，结构上做不到复用。</li><li>后端多态。<code>Tensor</code> 只持有<code>shared_ptr&lt;Buffer&gt;</code> ，完全不知道内存来自<code>posix_memalign</code> 、<code>cudaMalloc</code> 还是 NPU 的 DMA 池。这正是 deleter 用类型擦除的原因：把"怎么释放"藏进闭包，<code>Buffer</code> 本身保持非虚、轻量。如果直接 RAII 成<code>unique_ptr&lt;T[]&gt;</code> ，分配方式就被写死在类型里，跨后端就分裂了。</li><li>生命周期倒置。 这是最容易被忽略、但最容易写出悬垂指针的地方：</li></ol>
-<p>Result&lt;Tensor&gt; MakeFoo(); // 内部用某个 Context 分配 // Context 先析构，Tensor 后析构</p>
-<p>如果<code>Buffer</code> 的 deleter 直接持有<code>CpuMemoryManager*</code> ，Context 一销毁就是 use-after-free。所以 deleter 捕获的是<code>shared_ptr&lt;CpuAllocatorState&gt;</code> ： 管理器只是 state 的一个持有者，不是 state 本身 。Manager 死了，state 靠还活着的 Buffer 续命，等最后一个持有者释放时才在 \~CpuAllocatorState 里把整池还给 OS。</p>
-<p>一句话： RAII 保证"不泄漏"，共享 state 保证"不悬垂" ，两者解决的是不同问题。</p>
-<h2>具体机制值得注意的细节</h2>
-<ul><li>复用时的对齐校验 ：命中空闲块要求<code>bytes</code> 完全相同 且 该地址满足本次<code>alignment</code> 。前者防越界，后者防"32 字节对齐的旧块被当 64 字节用"。</li><li><code>Release</code> 先入池再减计数 ：<code>allocated_bytes</code> 表示 活跃 字节，池里的不算，所以基准测试中峰值是在正确性校验前采样的。</li><li>加锁范围最小化 ：只在<code>free_blocks</code> 的查找/插入上持锁，<code>AlignedAlloc</code> 在锁外，避免慢速系统调用串行化所有线程。</li></ul>
-<h2>这个设计的代价（已知局限，评审里也提过）</h2>
-<ol><li>池无上限、无淘汰 ：不同尺寸长期运行时历史块会一直驻留到 Context 销毁；<code>Stats()</code> 不包含缓存字节数，监控上看起来已释放。固定尺寸链路没问题，多尺寸长跑就是隐患。</li><li>只做精确匹配 ，不做尺寸取整或合并，所以收益集中在"同一链路重复跑"，碎片化场景收益有限。</li><li>分配路径有一把 mutex ，高并发小分配时会成为热点（原子计数本身无锁，但链表操作有锁）。</li><li>视图共享整个 Buffer ：<code>Slice</code> /<code>Permute</code> 的视图会让整块底层内存存活，无法只释放片段——这是"轻量视图"换取"简单所有权"的取舍。</li></ol>
-<h2>什么情况下"直接 RAII 就够"</h2>
-<p>如果这些 buffer 只在一个函数内部短暂存在、不需要对齐保证、不需要统计、不需要跨后端、也不需要复用——那确实用<code>std::vector&lt;std::byte&gt;</code> 就够了，管理器是纯负担。<code>CpuMemoryManager</code> 存在的理由是它服务于 算子返回值 ：这些 Tensor 会跨函数、跨 Context 生命周期、跨后端流动，还要被基准统计。所以这里多一层不是过度设计，而是把"分配策略"从"所有权"里剥出来的必然结果。</p>
-      <div class="article-nav"><a href="qa-overview.html"><span class="lbl">上一篇</span>问答与易错点总览</a><a class="next" href="qa-tensor-views.html"><span class="lbl">下一篇</span>Tensor 视图与 stride</a>
+cpu后端设计
+
+Buffer 负责"所有权"，CpuMemoryManager 负责"分配策略"，CpuAllocatorState 负责"两者的生命周期解耦"。
+
+| 层                 | 职责                   | 关键代码               |
+| ----------------- | -------------------- | ------------------ |
+| Buffer            | 谁在什么时候释放             | \~Buffer 调 deleter |
+| CpuMemoryManager  | 怎么分配：对齐、统计、复用        | Allocate           |
+| CpuAllocatorState | 管理器先死、Tensor 还活着时谁兜底 | shared\_ptr 捕获     |
+
+<br />
+
+## 为什么不能只用 RAII（比如 std::unique\_ptr\<float\[]>）
+
+1. 对齐。 算子内核按 64 字节对齐做向量化假设，默认`alignment=64` 。`new` /`malloc` /`std::vector` 只保证`alignof(max_align_t)` ，通常 16 字节。所以必须走`posix_memalign` ，这已经超出标准容器的能力边界。
+2. 无异常错误模型。`new` 失败抛`std::bad_alloc` ，而本库明确要保持`-fno-exceptions` 可用（ error.h 的注释写了这个动机）。`Allocate` 返回`Result<shared_ptr<Buffer>>` ，失败是`Status::OutOfMemory` 。`std::unique_ptr` +`new` 在这个约束下直接不可用。
+3. 统计。`MemoryStats` 要给出`allocated_bytes / peak_bytes / allocation_count` ，其中峰值必须是 跨所有分配聚合 的。单个 RAII 对象只能知道自己那一份，没有共享计数器就无法算峰值。峰值用 CAS 循环维护，这天然要求一个共享状态。
+4. 复用（这是引入空闲块池的直接动机）。 算子每次调用都新分配输出，一个 5 级链路的基准跑 20 轮就是上百次 alloc/free。空闲块按 精确字节数 留在池里，下一轮直接命中，上一轮实测`cache_reuse=yes` 就是靠这个。纯 RAII 的`unique_ptr` 语义是"析构即归还"，结构上做不到复用。
+5. 后端多态。`Tensor` 只持有`shared_ptr<Buffer>` ，完全不知道内存来自`posix_memalign` 、`cudaMalloc` 还是 NPU 的 DMA 池。这正是 deleter 用类型擦除的原因：把"怎么释放"藏进闭包，`Buffer` 本身保持非虚、轻量。如果直接 RAII 成`unique_ptr<T[]>` ，分配方式就被写死在类型里，跨后端就分裂了。
+6. 生命周期倒置。 这是最容易被忽略、但最容易写出悬垂指针的地方：
+
+Result<Tensor> MakeFoo(); // 内部用某个 Context 分配
+// Context 先析构，Tensor 后析构
+
+如果`Buffer` 的 deleter 直接持有`CpuMemoryManager*` ，Context 一销毁就是 use-after-free。所以 deleter 捕获的是`shared_ptr<CpuAllocatorState>` ： 管理器只是 state 的一个持有者，不是 state 本身 。Manager 死了，state 靠还活着的 Buffer 续命，等最后一个持有者释放时才在 \~CpuAllocatorState 里把整池还给 OS。
+
+一句话： RAII 保证"不泄漏"，共享 state 保证"不悬垂" ，两者解决的是不同问题。
+
+## 具体机制值得注意的细节
+
+- 复用时的对齐校验 ：命中空闲块要求`bytes` 完全相同 且 该地址满足本次`alignment` 。前者防越界，后者防"32 字节对齐的旧块被当 64 字节用"。
+- `Release` 先入池再减计数 ：`allocated_bytes` 表示 活跃 字节，池里的不算，所以基准测试中峰值是在正确性校验前采样的。
+- 加锁范围最小化 ：只在`free_blocks` 的查找/插入上持锁，`AlignedAlloc` 在锁外，避免慢速系统调用串行化所有线程。
+
+## 这个设计的代价（已知局限，评审里也提过）
+
+1. 池无上限、无淘汰 ：不同尺寸长期运行时历史块会一直驻留到 Context 销毁；`Stats()` 不包含缓存字节数，监控上看起来已释放。固定尺寸链路没问题，多尺寸长跑就是隐患。
+2. 只做精确匹配 ，不做尺寸取整或合并，所以收益集中在"同一链路重复跑"，碎片化场景收益有限。
+3. 分配路径有一把 mutex ，高并发小分配时会成为热点（原子计数本身无锁，但链表操作有锁）。
+4. 视图共享整个 Buffer ：`Slice` /`Permute` 的视图会让整块底层内存存活，无法只释放片段——这是"轻量视图"换取"简单所有权"的取舍。
+
+## 什么情况下"直接 RAII 就够"
+
+如果这些 buffer 只在一个函数内部短暂存在、不需要对齐保证、不需要统计、不需要跨后端、也不需要复用——那确实用`std::vector<std::byte>` 就够了，管理器是纯负担。`CpuMemoryManager` 存在的理由是它服务于 算子返回值 ：这些 Tensor 会跨函数、跨 Context 生命周期、跨后端流动，还要被基准统计。所以这里多一层不是过度设计，而是把"分配策略"从"所有权"里剥出来的必然结果。
