@@ -7,6 +7,47 @@
 (function () {
   'use strict';
 
+  /* ---------- Mermaid: 把 ```mermaid 代码块转成 SVG 图 ----------
+     kramdown 输出 <pre><code class="language-mermaid">…</code></pre>，
+     mermaid.js 只认 class="mermaid" 的元素，所以先做一次 DOM 转换再 init。 */
+  if (typeof window.mermaid !== 'undefined') {
+    try {
+      var isLight = document.documentElement.getAttribute('data-theme') === 'github';
+      window.mermaid.initialize({
+        startOnLoad: false,
+        theme: isLight ? 'default' : 'dark',
+        securityLevel: 'loose',
+        flowchart: { htmlLabels: true, curve: 'basis' },
+        themeVariables: isLight ? {} : {
+          background: 'transparent',
+          primaryColor: '#102420',
+          primaryTextColor: '#eaf3ee',
+          primaryBorderColor: '#4fd1a5',
+          lineColor: '#8fe3c5',
+          secondaryColor: '#0d1c18',
+          tertiaryColor: '#0b1714',
+          textColor: '#cfded7',
+          mainBkg: '#102420',
+          nodeBorder: '#4fd1a5',
+          clusterBkg: 'rgba(79, 209, 165, 0.06)',
+          clusterBorder: 'rgba(120, 200, 172, 0.3)'
+        }
+      });
+      var raw = document.querySelectorAll('pre code.language-mermaid');
+      Array.prototype.forEach.call(raw, function (code) {
+        var pre = code.parentElement;
+        if (!pre) return;
+        var div = document.createElement('div');
+        div.className = 'mermaid';
+        div.textContent = code.textContent;
+        pre.replaceWith(div);
+      });
+      if (document.querySelectorAll('.mermaid').length) {
+        window.mermaid.run();
+      }
+    } catch (e) { /* mermaid 渲染失败不影响页面其余部分 */ }
+  }
+
   var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var finePointer = window.matchMedia && window.matchMedia('(pointer: fine)').matches;
 

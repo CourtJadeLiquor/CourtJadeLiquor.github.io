@@ -47,6 +47,11 @@ defaults:
     values:
       layout: topic
 
+# ---- 构建元信息（兜底值；_plugins/build_metadata.rb 会在构建时覆盖为真实 git SHA + 时间） ----
+build_metadata:
+  date: "0000-00-00 00:00 UTC"
+  version: "unknown"
+
 # ---- Collections ----
 collections:
   articles:
