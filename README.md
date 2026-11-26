@@ -1,5 +1,5 @@
 # CourtJadeLiquor.github.io
-个人博客站点
+个人博客站点 https://courtjadeliquor.github.io/
 
 ## 本地构建
 
@@ -17,3 +17,6 @@ bundle exec jekyll build
 在仓库 **Settings → Pages → Build and deployment → Source** 中选择 **GitHub Actions**。不要选择 **Deploy from a branch**：该模式会使用 GitHub Pages 内置的 `github-pages` gem，与本项目的 Jekyll 4.4 依赖不兼容。
 
 `.github/workflows/pages.yml` 会在 `mysite` 分支更新时构建并部署站点。
+
+### 更新日期
+2026-11-26日
